@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 
 
+
 DATA_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\incident_categorizzati_chat.xlsx"
 
 MODEL_PRIORITA_PATH = "model_priorita.pkl"
@@ -38,16 +39,16 @@ def make_pipeline() -> Pipeline:
 
 
 def main() -> None:
-    df = pd.read_excel(DATA_PATH, index_col="Numero")
+    df = pd.read_excel(DATA_PATH)
 
-    # pulizia minima per evitare crash su NaN
+    # pulizia per evitare crash su NaN
     df = df.dropna(subset=["Descrizione", "Priorita", "GruppoAssegnazione"])
     X = df["Descrizione"].astype(str)
 
     y_priorita = df["Priorita"].astype(str)
     y_gruppo = df["GruppoAssegnazione"].astype(str)
 
-    # stesso split per entrambi, stratifico sulla priorità (di solito più sbilanciata)
+    # === TRAIN TEST SPLIT === 
     X_train, X_test, y_pr_train, y_pr_test, y_gr_train, y_gr_test = train_test_split(
         X,
         y_priorita,
@@ -73,7 +74,7 @@ def main() -> None:
     print("=== GRUPPO ASSEGNAZIONE ===")
     print(classification_report(y_gr_test, y_gr_pred, zero_division=0))
 
-    # Salvataggio modelli (pipeline completa: TF-IDF + SVM)
+    # === SALVATAGGIO MODELLI ===
     joblib.dump(pipeline_priorita, MODEL_PRIORITA_PATH)
     joblib.dump(pipeline_gruppo, MODEL_GRUPPO_PATH)
 

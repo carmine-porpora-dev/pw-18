@@ -13,7 +13,7 @@ export default function NewTicketPage() {
         <div>
           <div className="text-lg font-semibold">Apri un ticket</div>
           <div className="text-sm text-zinc-500">
-            Alla creazione, il backend richiama il modello ML e salva categoria/priorità suggerite.
+            Fornisci i dettagli necessari, descrivi dettagliatamente il tuo problema.
           </div>
         </div>
       </div>

@@ -4,7 +4,6 @@ export type Ticket = {
   id: string;
   title: string;
   description: string;
-  requester_email: string;
   created_at: string; // ISO
   status: TicketStatus;
 
@@ -17,7 +16,6 @@ export type Ticket = {
 export type CreateTicketInput = {
   title: string;
   description: string;
-  requester_email: string;
 };
 
 export type DashboardSummary = {

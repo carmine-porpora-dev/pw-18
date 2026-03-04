@@ -1,14 +1,9 @@
 import { CreateTicketInput, DashboardSummary, Ticket } from "./types";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-function mustBaseUrl(): string {
-  if (!baseUrl) throw new Error("Missing NEXT_PUBLIC_API_BASE_URL");
-  return baseUrl;
-}
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ?? "";
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${mustBaseUrl()}${path}`, {
+  const res = await fetch(`${baseUrl}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",

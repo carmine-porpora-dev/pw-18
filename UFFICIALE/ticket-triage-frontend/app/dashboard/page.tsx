@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AppShell } from "@/components/app-shell.tsx";
+import { AppShell } from "@/components/app-shell";
 import { StatCard } from "@/components/stat-card";
 import { BreakdownBarChart, OpenedTrendChart } from "@/components/charts";
 import { api } from "@/lib/api";

@@ -21,7 +21,6 @@ export function TicketTable({ tickets }: { tickets: Ticket[] }) {
                 <Link className="font-medium text-zinc-900 hover:underline" href={`/tickets/${t.id}`}>
                   {t.title}
                 </Link>
-                <div className="text-xs text-zinc-500">{t.requester_email}</div>
               </td>
               <td className="px-4 py-3">
                 <span className="rounded-lg bg-zinc-100 px-2 py-1 text-xs text-zinc-700">

@@ -7,15 +7,13 @@ import { CreateTicketInput, Ticket } from "@/lib/types";
 
 const schema = z.object({
   title: z.string().min(4, "Titolo troppo corto"),
-  description: z.string().min(10, "Descrizione troppo corta"),
-  requester_email: z.string().email("Email non valida")
+  description: z.string().min(10, "Descrizione troppo corta")
 });
 
 export function TicketForm({ onCreated }: { onCreated: (t: Ticket) => void }) {
   const [payload, setPayload] = useState<CreateTicketInput>({
     title: "",
-    description: "",
-    requester_email: ""
+    description: ""
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -62,16 +60,6 @@ export function TicketForm({ onCreated }: { onCreated: (t: Ticket) => void }) {
             value={payload.description}
             onChange={(e) => setPayload((p) => ({ ...p, description: e.target.value }))}
             placeholder="Dettagli, impatto, riproducibilità..."
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Email richiedente</label>
-          <input
-            className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 outline-none focus:ring-2 focus:ring-zinc-900/10"
-            value={payload.requester_email}
-            onChange={(e) => setPayload((p) => ({ ...p, requester_email: e.target.value }))}
-            placeholder="nome.cognome@azienda.it"
           />
         </div>
 

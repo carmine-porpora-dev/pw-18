@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { AppShell } from "C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\ticket-triage-frontend\components\app-shell.tsx";
+import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
 import { Ticket } from "@/lib/types";
 import { badgeForPriority, cn, formatDate } from "@/lib/utils";
@@ -32,7 +32,7 @@ export default function TicketDetailPage() {
             <div>
               <div className="text-lg font-semibold">{t.title}</div>
               <div className="text-sm text-zinc-500">
-                {t.requester_email} • {formatDate(t.created_at)} • <span className="font-medium">{t.status}</span>
+                {formatDate(t.created_at)} • <span className="font-medium">{t.status}</span>
               </div>
             </div>
 

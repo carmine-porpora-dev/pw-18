@@ -17,8 +17,8 @@ vectorizer = TfidfVectorizer(
 
 X = vectorizer.fit_transform(df["Descrizione"])
 
-joblib.dump(vectorizer, "tfidf_similarity.pkl")
-joblib.dump(X, "matrix_similarity.pkl")
-joblib.dump(df, "similarity_dataset.pkl")
+joblib.dump(vectorizer, r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\tfidf_similarity.pkl")
+joblib.dump(X, r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\matrix_similarity.pkl")
+joblib.dump(df, r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\similarity_dataset.pkl")
 
 print("Indice di similarità salvato")

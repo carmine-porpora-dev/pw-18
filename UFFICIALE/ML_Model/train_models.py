@@ -11,8 +11,8 @@ from sklearn.metrics import classification_report
 
 DATA_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\incident_categorizzati_chat.xlsx"
 
-MODEL_PRIORITA_PATH = "model_priorita.pkl"
-MODEL_GRUPPO_PATH = "model_gruppo.pkl"
+MODEL_PRIORITA_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\model_priorita.pkl"
+MODEL_GRUPPO_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\model_gruppo.pkl"
 
 
 def make_pipeline() -> Pipeline:

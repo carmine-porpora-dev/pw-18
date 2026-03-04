@@ -14,10 +14,10 @@ def processa_ticket(descrizione):
 
 if __name__ == "__main__":
 
-    ticket = "Salve,\npotreste procedere alla cancellazione del file FRDMOV01.202507282000_000 presente nel path /data/dw/landing/am/fraud/daily. La presenza di questo file ci blocca l'esecuzione di un elaborazione su acronimo FRAUD \nGrazie,\nSaluti"
+    #ticket = "Salve,\npotreste procedere alla cancellazione del file FRDMOV01.202507282000_000 presente nel path /data/dw/landing/am/fraud/daily. La presenza di questo file ci blocca l'esecuzione di un elaborazione su acronimo FRAUD \nGrazie,\nSaluti"
     #INTERNAL ANNOTATION 
     # AL MOMENTO LA PREDIZIONE PER IL TICKET IN BASSO NON FUNZIONA 
-    # = "Buongiorno, durante i controlli di allineamento dati è stata riscontrata una discrepanza di consistenza sul flusso relativo alla tabella B0XCC.TA_TITOLI. L'anomalia è evidenziata sulla struttura di controllo TA_CONSISTENZA_DATI_CC per la data di riferimento 28/02, con esito negativo del controllo di quadratura. Potete effettuare le opportune verifiche ed eseguire le attività di ripristino della consistenza? Grazie."
+    ticket = "Buongiorno, durante i controlli di allineamento dati è stata riscontrata una discrepanza di consistenza sul flusso relativo alla tabella B0XCC.TA_TITOLI. L'anomalia è evidenziata sulla struttura di controllo TA_CONSISTENZA_DATI_CC per la data di riferimento 28/02, con esito negativo del controllo di quadratura. Potete effettuare le opportune verifiche ed eseguire le attività di ripristino della consistenza? Grazie."
     risultato = processa_ticket(ticket)
 
     print("\nINCIDENT ANALIZZATO:" , ticket)

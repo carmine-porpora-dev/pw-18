@@ -13,8 +13,8 @@ print(True if "eliminare" in stopwords_it else False)
 print("### END DEBUG ###")
 """
 
-MODEL_PRIORITA_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\model_priorita.pkl"
-MODEL_GRUPPO_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\model_gruppo.pkl"
+MODEL_PRIORITA_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\model_priorita.pkl"
+MODEL_GRUPPO_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\model_gruppo.pkl"
 
 KEEP_FOR_EXPLAIN = {
     "attesa", "tempo", "ore", "minuti", "secondi", "giorni",

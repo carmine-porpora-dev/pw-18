@@ -10,7 +10,7 @@ export function TicketTable({ tickets }: { tickets: Ticket[] }) {
           <tr>
             <th className="px-4 py-3 text-left font-medium">Ticket</th>
             <th className="px-4 py-3 text-left font-medium">Stato</th>
-            <th className="px-4 py-3 text-left font-medium">Priorità (ML)</th>
+            <th className="px-4 py-3 text-left font-medium">Priorità</th>
             <th className="px-4 py-3 text-left font-medium">Creato</th>
           </tr>
         </thead>

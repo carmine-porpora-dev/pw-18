@@ -61,7 +61,7 @@ export async function createTicket(description: string) {
   }
 
   const ticket: StoredTicket = {
-    id: randomUUID(),
+    id: "TKT-" + randomUUID().replaceAll("-", "").toLocaleUpperCase().slice(-8),
     description,
     status: "open",
     created_at: new Date().toISOString(),

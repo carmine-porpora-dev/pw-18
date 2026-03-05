@@ -38,10 +38,10 @@ export default function TicketDetailPage() {
 
             <div className="flex flex-wrap gap-2">
               <span className={cn("rounded-xl px-3 py-1.5 text-xs", badgeForPriority(t.predicted_priority))}>
-                {t.predicted_priority ?? "priorità: —"}
+                Priorità: {t.predicted_priority ?? "priorità: —"}
               </span>
               <span className="rounded-xl bg-zinc-100 px-3 py-1.5 text-xs text-zinc-700">
-                categoria: {t.predicted_category ?? "—"}
+                Categoria: {t.predicted_category ?? "—"}
               </span>
               {typeof t.confidence === "number" && (
                 <span className="rounded-xl bg-zinc-100 px-3 py-1.5 text-xs text-zinc-700">
@@ -57,7 +57,7 @@ export default function TicketDetailPage() {
           </div>
 
           <div className="text-xs text-zinc-500">
-            Nota: il triage ML viene tipicamente eseguito lato backend alla creazione del ticket, per garantire coerenza e audit.
+            Nota: il triage ML viene tipicamente eseguito lato backend alla creazione del ticket, per garantire coerenza e audit, se noti inesattezze o errate assegnazioni, assegnare il ticket correttamente. 
           </div>
         </div>
       )}

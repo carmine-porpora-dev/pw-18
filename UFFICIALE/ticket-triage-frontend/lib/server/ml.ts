@@ -19,8 +19,8 @@ function normalizePriority(raw: string | undefined) {
   const value = raw.trim().toLowerCase();
 
   if (value.includes("critical") || value.includes("critica")) return "critical" as const;
-  if (value.includes("high") || value.includes("alta")) return "high" as const;
-  if (value.includes("medium") || value.includes("media")) return "medium" as const;
+  if (value.includes("planning") || value.includes("pianificazione")) return "planning" as const;
+  if (value.includes("medium") || value.includes("moderata")) return "moderate" as const;
   if (value.includes("low") || value.includes("bassa")) return "low" as const;
   return undefined;
 }

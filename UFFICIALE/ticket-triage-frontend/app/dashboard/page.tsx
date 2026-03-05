@@ -112,7 +112,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="rounded-2xl bg-white p-5 ring-1 ring-zinc-100 md:col-span-2">
-                <div className="text-sm font-medium">Ticket per priorità (ML)</div>
+                <div className="text-sm font-medium">Ticket per priorità</div>
                 <div className="mt-3">
                   <BreakdownBarChart data={data.by_priority} xKey="priority" barKey="count" />
                 </div>

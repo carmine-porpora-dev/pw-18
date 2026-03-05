@@ -12,7 +12,7 @@ def processa_ticket(descrizione):
         "top5" : top5
     }
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
 
     #ticket = "Salve,\npotreste procedere alla cancellazione del file FRDMOV01.202507282000_000 presente nel path /data/dw/landing/am/fraud/daily. La presenza di questo file ci blocca l'esecuzione di un elaborazione su acronimo FRAUD \nGrazie,\nSaluti"
     #INTERNAL ANNOTATION 

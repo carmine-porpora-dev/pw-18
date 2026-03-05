@@ -35,8 +35,8 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   const candidateTargets = dedupe([
-    ...candidatePaths.map((candidatePath) => (baseUrl ? buildUrl(baseUrl, candidatePath) : "")),
-    ...candidatePaths
+    ...candidatePaths,
+    ...candidatePaths.map((candidatePath) => (baseUrl ? buildUrl(baseUrl, candidatePath) : ""))
   ]).filter(Boolean);
 
   let lastError: Error | null = null;

@@ -2,7 +2,6 @@ export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
 
 export type Ticket = {
   id: string;
-  title: string;
   description: string;
   created_at: string; // ISO
   status: TicketStatus;
@@ -14,7 +13,6 @@ export type Ticket = {
 };
 
 export type CreateTicketInput = {
-  title: string;
   description: string;
 };
 

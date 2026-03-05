@@ -6,13 +6,11 @@ import { api } from "@/lib/api";
 import { CreateTicketInput, Ticket } from "@/lib/types";
 
 const schema = z.object({
-  title: z.string().min(4, "Titolo troppo corto"),
   description: z.string().min(10, "Descrizione troppo corta")
 });
 
 export function TicketForm({ onCreated }: { onCreated: (t: Ticket) => void }) {
   const [payload, setPayload] = useState<CreateTicketInput>({
-    title: "",
     description: ""
   });
   const [error, setError] = useState<string | null>(null);
@@ -41,25 +39,15 @@ export function TicketForm({ onCreated }: { onCreated: (t: Ticket) => void }) {
   }
 
   return (
-    <div className="rounded-2xl bg-white">
+    <div className="min-h-[360px] rounded-2xl bg-white p-5">
       <div className="grid gap-4">
-        <div>
-          <label className="text-sm font-medium">Titolo</label>
-          <input
-            className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 outline-none focus:ring-2 focus:ring-zinc-900/10"
-            value={payload.title}
-            onChange={(e) => setPayload((p) => ({ ...p, title: e.target.value }))}
-            placeholder="Es. Errore login SSO"
-          />
-        </div>
-
         <div>
           <label className="text-sm font-medium">Descrizione</label>
           <textarea
-            className="mt-1 min-h-[120px] w-full rounded-xl border border-zinc-200 px-3 py-2 outline-none focus:ring-2 focus:ring-zinc-900/10"
+            className="mt-1 min-h-[280px] w-full rounded-xl border border-zinc-200 px-3 py-2 outline-none focus:ring-2 focus:ring-zinc-900/10"
             value={payload.description}
             onChange={(e) => setPayload((p) => ({ ...p, description: e.target.value }))}
-            placeholder="Dettagli, impatto, riproducibilità..."
+            placeholder="Specifica ambiente, percorsi, job..."
           />
         </div>
 
@@ -74,7 +62,7 @@ export function TicketForm({ onCreated }: { onCreated: (t: Ticket) => void }) {
           disabled={loading}
           className="rounded-xl bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-60"
         >
-          {loading ? "Creazione..." : "Crea ticket (triage ML)"}
+          {loading ? "Creazione..." : "Crea ticket"}
         </button>
       </div>
     </div>

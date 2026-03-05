@@ -30,7 +30,7 @@ export default function TicketDetailPage() {
         <div className="grid gap-5">
           <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
-              <div className="text-lg font-semibold">{t.title}</div>
+              <div className="text-lg font-semibold">Ticket {t.id}</div>
               <div className="text-sm text-zinc-500">
                 {formatDate(t.created_at)} • <span className="font-medium">{t.status}</span>
               </div>

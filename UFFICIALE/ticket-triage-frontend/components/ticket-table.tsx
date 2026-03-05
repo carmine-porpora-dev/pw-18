@@ -8,7 +8,7 @@ export function TicketTable({ tickets }: { tickets: Ticket[] }) {
       <table className="w-full text-sm">
         <thead className="bg-zinc-50 text-zinc-600">
           <tr>
-            <th className="px-4 py-3 text-left font-medium">Titolo</th>
+            <th className="px-4 py-3 text-left font-medium">Ticket</th>
             <th className="px-4 py-3 text-left font-medium">Stato</th>
             <th className="px-4 py-3 text-left font-medium">Priorità (ML)</th>
             <th className="px-4 py-3 text-left font-medium">Creato</th>
@@ -19,7 +19,7 @@ export function TicketTable({ tickets }: { tickets: Ticket[] }) {
             <tr key={t.id} className="border-t border-zinc-100">
               <td className="px-4 py-3">
                 <Link className="font-medium text-zinc-900 hover:underline" href={`/tickets/${t.id}`}>
-                  {t.title}
+                  {t.description.slice(0, 70) || `Ticket ${t.id}`}
                 </Link>
               </td>
               <td className="px-4 py-3">

@@ -27,7 +27,9 @@ export async function POST(req: Request) {
     id: user.id,
     email: user.email,
     display_name: user.display_name,
-    group_id: user.group_id
+    group_id: user.group_id,
+    group_name: user.group_name,
+    is_super_admin: user.is_super_admin
   });
   res.cookies.set(SESSION_COOKIE, String(user.id), {
     httpOnly: true,

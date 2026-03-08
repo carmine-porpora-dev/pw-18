@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
   display_name TEXT NOT NULL,
   password TEXT NOT NULL,
   group_id INTEGER,
+  is_super_admin INTEGER NOT NULL DEFAULT 0,
   is_active INTEGER NOT NULL DEFAULT 1,
   d_at TEXT NOT NULL,
   FOREIGN KEY (group_id) REFERENCES groups(id)

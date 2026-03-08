@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getTicketByIdForGroup } from "@/lib/server/ticket-store";
+import { getTicketById, getTicketByIdForGroup } from "@/lib/server/ticket-store";
 import { getSessionUser } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
@@ -9,12 +9,16 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
   if (!user) {
     return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
   }
-  if (typeof user.group_id !== "number") {
-    return NextResponse.json({ error: "Utente senza gruppo associato" }, { status: 403 });
-  }
 
   const { id } = await context.params;
-  const ticket = await getTicketByIdForGroup(id, user.group_id);
+  let ticket = null;
+  if (user.is_super_admin === 1) {
+    ticket = await getTicketById(id);
+  } else if (typeof user.group_id === "number") {
+    ticket = await getTicketByIdForGroup(id, user.group_id);
+  } else {
+    return NextResponse.json({ error: "Utente senza gruppo associato" }, { status: 403 });
+  }
   if (!ticket) {
     return NextResponse.json({ error: "Ticket non trovato" }, { status: 404 });
   }

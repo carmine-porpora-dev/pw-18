@@ -57,6 +57,7 @@ def ensure_schema(conn: sqlite3.Connection):
           display_name TEXT NOT NULL,
           password TEXT NOT NULL,
           group_id INTEGER,
+          is_super_admin INTEGER NOT NULL DEFAULT 0,
           is_active INTEGER NOT NULL DEFAULT 1,
           d_at TEXT NOT NULL,
           FOREIGN KEY (group_id) REFERENCES groups(id)
@@ -109,6 +110,8 @@ def ensure_schema(conn: sqlite3.Connection):
             conn.execute("ALTER TABLE users ADD COLUMN password TEXT NOT NULL DEFAULT 'changeme'")
         if not column_exists(conn, "users", "group_id"):
             conn.execute("ALTER TABLE users ADD COLUMN group_id INTEGER")
+        if not column_exists(conn, "users", "is_super_admin"):
+            conn.execute("ALTER TABLE users ADD COLUMN is_super_admin INTEGER NOT NULL DEFAULT 0")
         if not column_exists(conn, "users", "d_at"):
             conn.execute("ALTER TABLE users ADD COLUMN d_at TEXT")
             if column_exists(conn, "users", "created_at"):
@@ -189,10 +192,17 @@ def ensure_schema(conn: sqlite3.Connection):
     default_group_id = default_group_row["id"] if default_group_row else None
     conn.execute(
         """
-        INSERT OR IGNORE INTO users(email, display_name, password, group_id, is_active, d_at)
-        VALUES (?, ?, ?, ?, 1, ?)
+        INSERT OR IGNORE INTO users(email, display_name, password, group_id, is_super_admin, is_active, d_at)
+        VALUES (?, ?, ?, ?, 0, 1, ?)
         """,
         ("admin@local", "Admin", "admin", default_group_id, utc_now_iso()),
+    )
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO users(email, display_name, password, group_id, is_super_admin, is_active, d_at)
+        VALUES (?, ?, ?, NULL, 1, 1, ?)
+        """,
+        ("super_admin", "super_admin", "super_admin", utc_now_iso()),
     )
 
 
@@ -504,9 +514,10 @@ def cmd_dashboard_summary(conn: sqlite3.Connection, payload=None):
 def cmd_authenticate_user(conn: sqlite3.Connection, payload):
     row = conn.execute(
         """
-        SELECT id, email, display_name, group_id, is_active
-        FROM users
-        WHERE email = ? AND password = ? AND is_active = 1
+        SELECT u.id, u.email, u.display_name, u.group_id, g.name AS group_name, u.is_super_admin, u.is_active
+        FROM users u
+        LEFT JOIN groups g ON g.id = u.group_id
+        WHERE u.email = ? AND u.password = ? AND u.is_active = 1
         """,
         (payload["email"], payload["password"]),
     ).fetchone()
@@ -516,9 +527,10 @@ def cmd_authenticate_user(conn: sqlite3.Connection, payload):
 def cmd_get_user_by_id(conn: sqlite3.Connection, payload):
     row = conn.execute(
         """
-        SELECT id, email, display_name, group_id, is_active
-        FROM users
-        WHERE id = ? AND is_active = 1
+        SELECT u.id, u.email, u.display_name, u.group_id, g.name AS group_name, u.is_super_admin, u.is_active
+        FROM users u
+        LEFT JOIN groups g ON g.id = u.group_id
+        WHERE u.id = ? AND u.is_active = 1
         """,
         (payload["id"],),
     ).fetchone()

@@ -1,16 +1,37 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Nav } from "./nav";
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const [groupName, setGroupName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!mounted || !data) return;
+        const label = data.is_super_admin === 1 ? "Super Admin" : data.group_name;
+        setGroupName(typeof label === "string" ? label : null);
+      })
+      .catch(() => {
+        setGroupName(null);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-6xl px-4 py-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-xl font-semibold tracking-tight">Help Desk</div>
-            <div className="text-sm text-zinc-500">Home</div>
+            <div className="text-xl font-semibold tracking-tight">
+              {groupName ? `${groupName} - ` : ""}Help Desk
+            </div>
           </div>
           <Nav />
         </div>

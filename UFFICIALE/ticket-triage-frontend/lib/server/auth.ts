@@ -7,6 +7,8 @@ export type SessionUser = {
   email: string;
   display_name: string;
   group_id: number | null;
+  group_name: string | null;
+  is_super_admin: number;
   is_active: number;
 };
 

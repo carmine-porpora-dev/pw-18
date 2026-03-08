@@ -389,6 +389,14 @@ def cmd_dashboard_summary_filtered(conn: sqlite3.Connection, group_id):
             """,
             (start, end),
         ).fetchone()["c"]
+        closed_count = conn.execute(
+            """
+            SELECT COUNT(*) AS c
+            FROM tickets
+            WHERE status = 'closed' AND date(d_at) BETWEEN ? AND ?
+            """,
+            (start, end),
+        ).fetchone()["c"]
     else:
         opened_count = conn.execute(
             "SELECT COUNT(*) AS c FROM tickets WHERE assigned_group_id = ? AND date(d_at) BETWEEN ? AND ?",
@@ -403,6 +411,14 @@ def cmd_dashboard_summary_filtered(conn: sqlite3.Connection, group_id):
             SELECT COUNT(*) AS c
             FROM tickets
             WHERE assigned_group_id = ? AND status = 'resolved' AND date(d_at) BETWEEN ? AND ?
+            """,
+            (group_id, start, end),
+        ).fetchone()["c"]
+        closed_count = conn.execute(
+            """
+            SELECT COUNT(*) AS c
+            FROM tickets
+            WHERE assigned_group_id = ? AND status = 'closed' AND date(d_at) BETWEEN ? AND ?
             """,
             (group_id, start, end),
         ).fetchone()["c"]
@@ -440,6 +456,47 @@ def cmd_dashboard_summary_filtered(conn: sqlite3.Connection, group_id):
               SELECT date(d_at) AS d, COUNT(*) AS c
               FROM tickets
               WHERE assigned_group_id = ?
+              GROUP BY date(d_at)
+            ) t ON t.d = days.day
+            ORDER BY days.day
+            """,
+            (start, end, group_id),
+        ).fetchall()
+
+    if group_id is None:
+        closed_trend_rows = conn.execute(
+            """
+            WITH RECURSIVE days(day) AS (
+              SELECT date(?)
+              UNION ALL
+              SELECT date(day, '+1 day') FROM days WHERE day < date(?)
+            )
+            SELECT days.day AS date, COALESCE(t.c, 0) AS closed
+            FROM days
+            LEFT JOIN (
+              SELECT date(d_at) AS d, COUNT(*) AS c
+              FROM tickets
+              WHERE status = 'closed'
+              GROUP BY date(d_at)
+            ) t ON t.d = days.day
+            ORDER BY days.day
+            """,
+            (start, end),
+        ).fetchall()
+    else:
+        closed_trend_rows = conn.execute(
+            """
+            WITH RECURSIVE days(day) AS (
+              SELECT date(?)
+              UNION ALL
+              SELECT date(day, '+1 day') FROM days WHERE day < date(?)
+            )
+            SELECT days.day AS date, COALESCE(t.c, 0) AS closed
+            FROM days
+            LEFT JOIN (
+              SELECT date(d_at) AS d, COUNT(*) AS c
+              FROM tickets
+              WHERE assigned_group_id = ? AND status = 'closed'
               GROUP BY date(d_at)
             ) t ON t.d = days.day
             ORDER BY days.day
@@ -498,8 +555,10 @@ def cmd_dashboard_summary_filtered(conn: sqlite3.Connection, group_id):
             "opened_count": opened_count,
             "open_now_count": open_now_count,
             "resolved_count": resolved_count,
+            "closed_count": closed_count,
         },
         "opened_trend": [{"date": r["date"], "opened": r["opened"]} for r in trend_rows],
+        "closed_trend": [{"date": r["date"], "closed": r["closed"]} for r in closed_trend_rows],
         "by_category": [{"category": r["category"], "count": r["count"]} for r in by_category_rows],
         "by_priority": [{"priority": r["priority"], "count": r["count"]} for r in by_priority_rows],
     }

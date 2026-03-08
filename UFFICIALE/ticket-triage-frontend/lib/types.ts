@@ -24,8 +24,10 @@ export type DashboardSummary = {
     opened_count: number;
     open_now_count: number;
     resolved_count: number;
+    closed_count: number;
   };
   opened_trend: Array<{ date: string; opened: number }>;
+  closed_trend: Array<{ date: string; closed: number }>;
   by_category: Array<{ category: string; count: number }>;
   by_priority: Array<{ priority: string; count: number }>;
 };

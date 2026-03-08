@@ -21,7 +21,7 @@ export default function TicketsPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="text-lg font-semibold">Ticket</div>
-          <div className="text-sm text-zinc-500">Lista ticket con priorità/categoria suggerite dal modello.</div>
+          <div className="text-sm text-zinc-500">Lista ticket con priorità/categoria</div>
         </div>
       </div>
 

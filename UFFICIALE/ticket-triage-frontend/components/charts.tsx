@@ -13,6 +13,18 @@ import {
 } from "recharts";
 
 export function OpenedTrendChart({ data }: { data: Array<{ date: string; opened: number }> }) {
+  return <TicketTrendChart data={data} dataKey="opened" color="#18181b" />;
+}
+
+export function TicketTrendChart({
+  data,
+  dataKey,
+  color = "#18181b"
+}: {
+  data: Array<Record<string, any>>;
+  dataKey: string;
+  color?: string;
+}) {
   return (
     <div className="h-[280px] w-full">
       <ResponsiveContainer>
@@ -21,7 +33,7 @@ export function OpenedTrendChart({ data }: { data: Array<{ date: string; opened:
           <XAxis dataKey="date" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
           <Tooltip />
-          <Line type="monotone" dataKey="opened" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>

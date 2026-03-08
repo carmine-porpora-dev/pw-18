@@ -35,6 +35,67 @@ def column_exists(conn: sqlite3.Connection, table_name: str, column_name: str):
     return any(r["name"] == column_name for r in rows)
 
 
+def rebuild_ml_predictions_if_broken_fk(conn: sqlite3.Connection):
+    if not table_exists(conn, "ml_predictions"):
+        return
+
+    fk_rows = conn.execute("PRAGMA foreign_key_list(ml_predictions)").fetchall()
+    has_broken_fk = any(r[2] == "tickets_old" for r in fk_rows)
+    if not has_broken_fk:
+        return
+
+    conn.execute("ALTER TABLE ml_predictions RENAME TO ml_predictions_old")
+    conn.execute(
+        """
+        CREATE TABLE ml_predictions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          ticket_id TEXT NOT NULL,
+          model_name TEXT NOT NULL,
+          model_version TEXT NOT NULL,
+          priority TEXT,
+          category TEXT,
+          AzioniFatteInPassato TEXT,
+          Top5 TEXT,
+          d_at TEXT NOT NULL,
+          FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+        )
+        """
+    )
+
+    old_rows = conn.execute("SELECT * FROM ml_predictions_old").fetchall()
+    old_cols = {r["name"] for r in conn.execute("PRAGMA table_info(ml_predictions_old)").fetchall()}
+
+    for row in old_rows:
+        data = dict(row)
+        priority = data.get("priority") if "priority" in old_cols else data.get("predicted_priority")
+        category = data.get("category") if "category" in old_cols else data.get("predicted_category")
+        action = data.get("AzioniFatteInPassato")
+        top5 = data.get("Top5") if "Top5" in old_cols else data.get("raw_top5_json")
+        d_at = data.get("d_at") if "d_at" in old_cols else data.get("created_at")
+
+        conn.execute(
+            """
+            INSERT INTO ml_predictions(
+              id, ticket_id, model_name, model_version, priority, category, AzioniFatteInPassato, Top5, d_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                data.get("id"),
+                data.get("ticket_id"),
+                data.get("model_name") or "motore_ml",
+                data.get("model_version") or "v1",
+                priority,
+                category,
+                action,
+                top5 if top5 is not None else "[]",
+                d_at if d_at is not None else utc_now_iso(),
+            ),
+        )
+
+    conn.execute("DROP TABLE ml_predictions_old")
+
+
 def ensure_schema(conn: sqlite3.Connection):
     # Elimina tabelle non più richieste.
     conn.execute("DROP TABLE IF EXISTS ticket_events")
@@ -103,6 +164,8 @@ def ensure_schema(conn: sqlite3.Connection):
         );
         """
     )
+
+    rebuild_ml_predictions_if_broken_fk(conn)
 
     # Migrazione incrementale se il DB era già presente con vecchie colonne.
     if table_exists(conn, "users"):
@@ -368,6 +431,40 @@ def cmd_create_ticket(conn: sqlite3.Connection, payload):
     return to_ticket_dict(row)
 
 
+def cmd_update_ticket_ml(conn: sqlite3.Connection, payload):
+    ticket_id = payload["id"]
+    top5 = payload.get("Top5")
+    top5_json = json.dumps(top5, ensure_ascii=False) if top5 is not None else None
+
+    conn.execute(
+        """
+        UPDATE tickets
+        SET
+          priority = COALESCE(?, priority),
+          category = COALESCE(?, category),
+          AzioniFatteInPassato = COALESCE(?, AzioniFatteInPassato),
+          Top5 = COALESCE(?, Top5)
+        WHERE id = ?
+        """,
+        (
+            payload.get("priority"),
+            payload.get("category"),
+            payload.get("AzioniFatteInPassato"),
+            top5_json,
+            ticket_id,
+        ),
+    )
+
+    row = conn.execute(
+        """
+        SELECT id, description, status, d_at, priority, category, AzioniFatteInPassato, Top5
+        FROM tickets WHERE id = ?
+        """,
+        (ticket_id,),
+    ).fetchone()
+    return to_ticket_dict(row) if row else None
+
+
 def cmd_dashboard_summary_filtered(conn: sqlite3.Connection, group_id):
     now = datetime.now(UTC)
     start = (now - timedelta(days=29)).date().isoformat()
@@ -608,6 +705,7 @@ COMMANDS = {
     "list_tickets": cmd_list_tickets,
     "get_ticket": cmd_get_ticket,
     "create_ticket": cmd_create_ticket,
+    "update_ticket_ml": cmd_update_ticket_ml,
     "dashboard_summary": cmd_dashboard_summary,
     "authenticate_user": cmd_authenticate_user,
     "get_user_by_id": cmd_get_user_by_id,

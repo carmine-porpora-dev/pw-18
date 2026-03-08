@@ -21,11 +21,13 @@ export async function listTicketsByGroup(groupId: number) {
 }
 
 export async function getTicketById(id: string) {
-  return runDb<Ticket | null>("get_ticket", { id });
+  const ticket = await runDb<Ticket | null>("get_ticket", { id });
+  return hydrateTicketMlFields(ticket);
 }
 
 export async function getTicketByIdForGroup(id: string, groupId: number) {
-  return runDb<Ticket | null>("get_ticket", { id, group_id: groupId });
+  const ticket = await runDb<Ticket | null>("get_ticket", { id, group_id: groupId });
+  return hydrateTicketMlFields(ticket);
 }
 
 export async function createTicket(description: string, userId: number, userGroupId: number | null) {
@@ -69,4 +71,25 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
 
 export async function getDashboardSummaryForGroup(groupId: number): Promise<DashboardSummary> {
   return runDb<DashboardSummary>("dashboard_summary", { group_id: groupId });
+}
+
+async function hydrateTicketMlFields(ticket: Ticket | null) {
+  if (!ticket) return null;
+
+  const hasAction = typeof ticket.AzioniFatteInPassato === "string" && ticket.AzioniFatteInPassato.trim().length > 0;
+  const hasTop5 = Array.isArray(ticket.Top5) && ticket.Top5.length > 0;
+  if (hasAction && hasTop5) return ticket;
+
+  try {
+    const inferred = await inferTicket(ticket.description);
+    return runDb<Ticket | null>("update_ticket_ml", {
+      id: ticket.id,
+      priority: inferred.priority,
+      category: inferred.category,
+      AzioniFatteInPassato: inferred.AzioniFatteInPassato,
+      Top5: inferred.Top5
+    });
+  } catch {
+    return ticket;
+  }
 }

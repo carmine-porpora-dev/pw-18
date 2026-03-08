@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { BarChart3, ListChecks, PlusCircle } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { BarChart3, ListChecks, LogOut, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -13,6 +13,13 @@ const items = [
 
 export function Nav() {
   const path = usePathname();
+  const router = useRouter();
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <nav className="flex items-center gap-2">
@@ -35,6 +42,13 @@ export function Nav() {
           </Link>
         );
       })}
+      <button
+        onClick={logout}
+        className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm text-zinc-700 ring-1 ring-zinc-200 transition hover:bg-zinc-50"
+      >
+        <LogOut size={16} />
+        Logout
+      </button>
     </nav>
   );
 }

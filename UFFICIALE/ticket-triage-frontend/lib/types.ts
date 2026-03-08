@@ -5,11 +5,14 @@ export type Ticket = {
   description: string;
   created_at: string; // ISO
   status: TicketStatus;
+  created_by_user_id?: number;
+  assigned_group_id?: number | null;
 
-  // campi triage ML (ritornati dal backend)
-  predicted_category?: string;
-  predicted_priority?: "low" | "medium" | "high" | "critical";
-  confidence?: number; // 0..1
+  // campi triage ML
+  category?: string;
+  priority?: "low" | "medium" | "high" | "critical";
+  AzioniFatteInPassato?: string;
+  Top5?: string[];
 };
 
 export type CreateTicketInput = {

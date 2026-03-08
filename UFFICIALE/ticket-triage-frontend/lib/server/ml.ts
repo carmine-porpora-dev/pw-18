@@ -19,8 +19,9 @@ function normalizePriority(raw: string | undefined) {
   const value = raw.trim().toLowerCase();
 
   if (value.includes("critical") || value.includes("critica")) return "critical" as const;
-  if (value.includes("planning") || value.includes("pianificazione")) return "planning" as const;
-  if (value.includes("medium") || value.includes("moderata")) return "moderate" as const;
+  if (value.includes("high") || value.includes("alta")) return "high" as const;
+  if (value.includes("planning") || value.includes("pianificazione")) return "high" as const;
+  if (value.includes("medium") || value.includes("moderata")) return "medium" as const;
   if (value.includes("low") || value.includes("bassa")) return "low" as const;
   return undefined;
 }
@@ -41,8 +42,9 @@ export async function inferTicket(description: string) {
   const parsed = JSON.parse(stdout.trim()) as MlResult;
 
   return {
-    predicted_priority: normalizePriority(parsed.priorita),
-    predicted_category: parsed.gruppo?.trim() || undefined,
-    confidence: undefined as number | undefined
+    priority: normalizePriority(parsed.priorita),
+    category: parsed.gruppo?.trim() || undefined,
+    AzioniFatteInPassato: parsed.azioni_consigliate?.trim() || undefined,
+    Top5: Array.isArray(parsed.top5) ? parsed.top5 : []
   };
 }

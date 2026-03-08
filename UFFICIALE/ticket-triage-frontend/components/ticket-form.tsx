@@ -28,7 +28,7 @@ export function TicketForm({ onCreated }: { onCreated: (t: Ticket) => void }) {
       setLoading(true);
       // Qui il backend dovrebbe:
       // 1) chiamare il tuo modello ML (POST /api/triage/predict internamente o direttamente in create)
-      // 2) salvare predicted_priority/category/confidence nel ticket
+      // 2) salvare priority/category/AzioniFatteInPassato/Top5 nel ticket
       const created = await api.createTicket(payload);
       onCreated(created);
     } catch (e: any) {

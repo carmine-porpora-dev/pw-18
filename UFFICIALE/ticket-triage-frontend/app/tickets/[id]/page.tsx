@@ -30,24 +30,19 @@ export default function TicketDetailPage() {
         <div className="grid gap-5">
           <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
-              <div className="text-lg font-semibold">Ticket {t.id}</div>
+              <div className="text-lg font-semibold">{t.id}</div>
               <div className="text-sm text-zinc-500">
-                {formatDate(t.created_at)} • <span className="font-medium">{t.status}</span>
+                {formatDate(t.created_at)} - <span className="font-medium">{t.status}</span>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <span className={cn("rounded-xl px-3 py-1.5 text-xs", badgeForPriority(t.predicted_priority))}>
-                Priorità: {t.predicted_priority ?? "priorità: —"}
+              <span className={cn("rounded-xl px-3 py-1.5 text-xs", badgeForPriority(t.priority))}>
+                Priorita: {t.priority ?? "-"}
               </span>
               <span className="rounded-xl bg-zinc-100 px-3 py-1.5 text-xs text-zinc-700">
-                Categoria: {t.predicted_category ?? "—"}
+                Categoria: {t.category ?? "-"}
               </span>
-              {typeof t.confidence === "number" && (
-                <span className="rounded-xl bg-zinc-100 px-3 py-1.5 text-xs text-zinc-700">
-                  confidenza: {Math.round(t.confidence * 100)}%
-                </span>
-              )}
             </div>
           </div>
 
@@ -56,8 +51,16 @@ export default function TicketDetailPage() {
             <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-700">{t.description}</p>
           </div>
 
-          <div className="text-xs text-zinc-500">
-            Nota: il triage ML viene tipicamente eseguito lato backend alla creazione del ticket, per garantire coerenza e audit, se noti inesattezze o errate assegnazioni, assegnare il ticket correttamente. 
+          <div className="rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-100">
+            <div className="text-sm font-medium">Azione Fatta In Passato</div>
+            <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-700">{t.AzioniFatteInPassato ?? "-"}</p>
+          </div>
+
+          <div className="rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-100">
+            <div className="text-sm font-medium">Top5</div>
+            <p className="mt-2 text-sm text-zinc-700">
+              {t.Top5 && t.Top5.length ? t.Top5.join(", ") : "-"}
+            </p>
           </div>
         </div>
       )}

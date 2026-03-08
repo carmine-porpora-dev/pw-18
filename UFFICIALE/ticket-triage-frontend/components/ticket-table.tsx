@@ -10,7 +10,7 @@ export function TicketTable({ tickets }: { tickets: Ticket[] }) {
           <tr>
             <th className="px-4 py-3 text-left font-medium">Ticket</th>
             <th className="px-4 py-3 text-left font-medium">Stato</th>
-            <th className="px-4 py-3 text-left font-medium">Priorità</th>
+            <th className="px-4 py-3 text-left font-medium">Priorita</th>
             <th className="px-4 py-3 text-left font-medium">Creato</th>
           </tr>
         </thead>
@@ -28,12 +28,9 @@ export function TicketTable({ tickets }: { tickets: Ticket[] }) {
                 </span>
               </td>
               <td className="px-4 py-3">
-                <span className={cn("rounded-lg px-2 py-1 text-xs", badgeForPriority(t.predicted_priority))}>
-                  {t.predicted_priority ?? "—"}
+                <span className={cn("rounded-lg px-2 py-1 text-xs", badgeForPriority(t.priority))}>
+                  {t.priority ?? "-"}
                 </span>
-                {typeof t.confidence === "number" && (
-                  <span className="ml-2 text-xs text-zinc-500">{Math.round(t.confidence * 100)}%</span>
-                )}
               </td>
               <td className="px-4 py-3 text-zinc-600">{formatDate(t.created_at)}</td>
             </tr>

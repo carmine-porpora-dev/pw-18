@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
-import { createTicket, listTickets } from "@/lib/server/ticket-store";
+import { createTicket, listTicketsByGroup } from "@/lib/server/ticket-store";
+import { getSessionUser } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const tickets = await listTickets();
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+  }
+  if (typeof user.group_id !== "number") {
+    return NextResponse.json({ error: "Utente senza gruppo associato" }, { status: 403 });
+  }
+
+  const tickets = await listTicketsByGroup(user.group_id);
   return NextResponse.json(tickets);
 }
 
@@ -20,6 +29,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Descrizione non valida (minimo 10 caratteri)" }, { status: 400 });
   }
 
-  const ticket = await createTicket(body.description.trim());
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+  }
+
+  const ticket = await createTicket(body.description.trim(), user.id, user.group_id);
   return NextResponse.json(ticket, { status: 201 });
 }

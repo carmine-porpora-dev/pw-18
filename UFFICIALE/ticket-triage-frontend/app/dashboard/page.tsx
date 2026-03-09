@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { StatCard } from "@/components/stat-card";
-import { BreakdownBarChart, OpenedTrendChart, TicketTrendChart } from "@/components/charts";
+import {
+  BreakdownBarChart,
+  BreakdownPieChart,
+  OpenedTrendChart,
+  TicketTrendChart
+} from "@/components/charts";
 import { api } from "@/lib/api";
 import { DashboardSummary } from "@/lib/types";
 
@@ -99,17 +104,17 @@ export default function DashboardPage() {
               <StatCard
                 title="Attualmente aperti"
                 value={String(data.last_30_days.open_now_count)}
-                subtitle="Open / in_progress"
+                subtitle="Totale Ticket Open"
               />
               <StatCard
                 title="Risolti (30 giorni)"
                 value={String(data.last_30_days.resolved_count)}
-                subtitle="Risolti negli ultimi 30 giorni"
+                subtitle=" Ticket risolti negli ultimi 30 giorni"
               />
               <StatCard
                 title="Chiusi (30 giorni)"
                 value={String(data.last_30_days.closed_count)}
-                subtitle="Chiusi negli ultimi 30 giorni"
+                subtitle="Ticket chiusi negli ultimi 30 giorni"
               />
             </div>
 
@@ -125,13 +130,13 @@ export default function DashboardPage() {
                 <div className="rounded-2xl bg-white p-5 ring-1 ring-zinc-100">
                   <div className="text-sm font-medium">Ticket per categoria </div>
                   <div className="mt-3">
-                    <BreakdownBarChart data={data.by_category} xKey="category" barKey="count" />
+                    <BreakdownPieChart data={data.by_category} nameKey="category" valueKey="count" />
                   </div>
                 </div>
               )}
 
               <div className="rounded-2xl bg-white p-5 ring-1 ring-zinc-100">
-                <div className="text-sm font-medium">Andamento ticket chiusi</div>
+                <div className="text-sm font-medium">Andamento chiusura ticket</div>
                 <div className="mt-3">
                   <TicketTrendChart data={data.closed_trend} dataKey="closed" color="#dc2626" />
                 </div>

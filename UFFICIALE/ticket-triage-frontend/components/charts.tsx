@@ -9,8 +9,14 @@ import {
   Tooltip,
   ResponsiveContainer,
   LineChart,
-  Line
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from "recharts";
+
+const PIE_COLORS = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#14b8a6"];
 
 export function OpenedTrendChart({ data }: { data: Array<{ date: string; opened: number }> }) {
   return <TicketTrendChart data={data} dataKey="opened" color="#18181b" />;
@@ -59,6 +65,40 @@ export function BreakdownBarChart({
           <Tooltip />
           <Bar dataKey={barKey} />
         </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function BreakdownPieChart({
+  data,
+  nameKey,
+  valueKey
+}: {
+  data: Array<Record<string, any>>;
+  nameKey: string;
+  valueKey: string;
+}) {
+  return (
+    <div className="h-[280px] w-full">
+      <ResponsiveContainer>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey={valueKey}
+            nameKey={nameKey}
+            cx="50%"
+            cy="50%"
+            outerRadius={90}
+            label
+          >
+            {data.map((_, index) => (
+              <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip />
+          <Legend />
+        </PieChart>
       </ResponsiveContainer>
     </div>
   );

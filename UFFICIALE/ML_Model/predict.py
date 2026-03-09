@@ -22,7 +22,7 @@ KEEP_FOR_EXPLAIN = {
 }
 
 EXTRA_STOPWORDS = {
-    "gentilmente", "saluti", "potreste", "buongiorno", "procedere" 
+    "gentilmente", "saluti", "potreste", "buongiorno", "procedere" , "potete"
 }
 
 def explain_top5_filtered_for_class(ticket: str, pipe, pred: str, *,

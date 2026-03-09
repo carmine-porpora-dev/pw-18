@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { StatCard } from "@/components/stat-card";
 import {
-  BreakdownBarChart,
   BreakdownPieChart,
   OpenedTrendChart,
   TicketTrendChart
@@ -100,21 +99,25 @@ export default function DashboardPage() {
                 title="Ticket aperti (30 giorni)"
                 value={String(data.last_30_days.opened_count)}
                 subtitle="Totale creati negli ultimi 30 giorni"
+                href="/tickets?filter=opened_30d"
               />
               <StatCard
                 title="Attualmente aperti"
                 value={String(data.last_30_days.open_now_count)}
                 subtitle="Totale Ticket Open"
+                href="/tickets?filter=open_now"
               />
               <StatCard
                 title="Risolti (30 giorni)"
                 value={String(data.last_30_days.resolved_count)}
                 subtitle=" Ticket risolti negli ultimi 30 giorni"
+                href="/tickets?filter=resolved_30d"
               />
               <StatCard
                 title="Chiusi (30 giorni)"
                 value={String(data.last_30_days.closed_count)}
                 subtitle="Ticket chiusi negli ultimi 30 giorni"
+                href="/tickets?filter=closed_30d"
               />
             </div>
 
@@ -123,6 +126,13 @@ export default function DashboardPage() {
                 <div className="text-sm font-medium">Andamento aperture</div>
                 <div className="mt-3">
                   <OpenedTrendChart data={data.opened_trend} />
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white p-5 ring-1 ring-zinc-100">
+                <div className="text-sm font-medium">Andamento chiusura ticket</div>
+                <div className="mt-3">
+                  <TicketTrendChart data={data.closed_trend} dataKey="closed" color="#dc2626" />
                 </div>
               </div>
 
@@ -136,16 +146,9 @@ export default function DashboardPage() {
               )}
 
               <div className="rounded-2xl bg-white p-5 ring-1 ring-zinc-100">
-                <div className="text-sm font-medium">Andamento chiusura ticket</div>
-                <div className="mt-3">
-                  <TicketTrendChart data={data.closed_trend} dataKey="closed" color="#dc2626" />
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-white p-5 ring-1 ring-zinc-100 md:col-span-2">
                 <div className="text-sm font-medium">Ticket per priorita</div>
                 <div className="mt-3">
-                  <BreakdownBarChart data={data.by_priority} xKey="priority" barKey="count" />
+                  <BreakdownPieChart data={data.by_priority} nameKey="priority" valueKey="count" />
                 </div>
               </div>
             </div>

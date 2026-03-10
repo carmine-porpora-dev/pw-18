@@ -1,15 +1,25 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { StatCard } from "@/components/stat-card";
-import {
-  BreakdownPieChart,
-  OpenedTrendChart,
-  TicketTrendChart
-} from "@/components/charts";
 import { api } from "@/lib/api";
+import { getCachedSessionUser } from "@/lib/client/session-user";
 import { DashboardSummary } from "@/lib/types";
+
+const OpenedTrendChart = dynamic(
+  () => import("@/components/charts").then((mod) => mod.OpenedTrendChart),
+  { ssr: false }
+);
+const TicketTrendChart = dynamic(
+  () => import("@/components/charts").then((mod) => mod.TicketTrendChart),
+  { ssr: false }
+);
+const BreakdownPieChart = dynamic(
+  () => import("@/components/charts").then((mod) => mod.BreakdownPieChart),
+  { ssr: false }
+);
 
 function buildFlatTrend(days: number, key: "opened" | "closed") {
   const now = new Date();
@@ -63,15 +73,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([api.dashboardSummary(), fetch("/api/auth/me", { cache: "no-store" })])
-      .then(async ([summary, meRes]) => {
+    Promise.all([api.dashboardSummary(), getCachedSessionUser()])
+      .then(([summary, me]) => {
         setData(normalizeDashboard(summary));
-        if (meRes.ok) {
-          const me = await meRes.json();
-          setIsSuperAdmin(me?.is_super_admin === 1);
-        } else {
-          setIsSuperAdmin(false);
-        }
+        setIsSuperAdmin(me?.is_super_admin === 1);
       })
       .catch(() => {
         setData(EMPTY_DASHBOARD);

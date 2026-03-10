@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BarChart3, ListChecks, LogOut, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clearCachedSessionUser } from "@/lib/client/session-user";
 
 const items = [
   { href: "/tickets", label: "Ticket", icon: ListChecks },
@@ -17,6 +18,7 @@ export function Nav() {
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
+    clearCachedSessionUser();
     router.push("/login");
     router.refresh();
   }

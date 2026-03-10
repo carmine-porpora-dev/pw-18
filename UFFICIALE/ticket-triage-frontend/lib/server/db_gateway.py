@@ -1,4 +1,4 @@
-import json
+﻿import json
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -9,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = BASE_DIR / ".data"
 DB_PATH = DATA_DIR / "tickets.db"
 LEGACY_JSON_PATH = DATA_DIR / "tickets.json"
+SCHEMA_VERSION = 2
 
 
 def configure_stdio():
@@ -26,8 +27,20 @@ def connect():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA temp_store = MEMORY")
+    conn.execute("PRAGMA busy_timeout = 5000")
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
+
+def get_user_version(conn: sqlite3.Connection):
+    return conn.execute("PRAGMA user_version").fetchone()[0]
+
+
+def set_user_version(conn: sqlite3.Connection, version: int):
+    conn.execute(f"PRAGMA user_version = {version}")
 
 
 def table_exists(conn: sqlite3.Connection, table_name: str):
@@ -40,6 +53,47 @@ def table_exists(conn: sqlite3.Connection, table_name: str):
 def column_exists(conn: sqlite3.Connection, table_name: str, column_name: str):
     rows = conn.execute(f"PRAGMA table_info({table_name})").fetchall()
     return any(r["name"] == column_name for r in rows)
+
+
+def has_expected_tables(conn: sqlite3.Connection):
+    required_tables = ("groups", "users", "tickets", "ml_predictions", "dashboard_snapshots")
+    return all(table_exists(conn, table_name) for table_name in required_tables)
+
+
+def ensure_indexes(conn: sqlite3.Connection):
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_d_at ON tickets(d_at)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_group ON tickets(assigned_group_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_creator ON tickets(created_by_user_id)")
+
+
+def ensure_seed_data(conn: sqlite3.Connection):
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO groups(name, description, d_at)
+        VALUES (?, ?, ?)
+        """,
+        ("DEFAULT_GROUP", "Gruppo di default", utc_now_iso()),
+    )
+    default_group_row = conn.execute(
+        "SELECT id FROM groups WHERE name = ?",
+        ("DEFAULT_GROUP",),
+    ).fetchone()
+    default_group_id = default_group_row["id"] if default_group_row else None
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO users(email, display_name, password, group_id, is_super_admin, is_active, d_at)
+        VALUES (?, ?, ?, ?, 0, 1, ?)
+        """,
+        ("admin@local", "Admin", "admin", default_group_id, utc_now_iso()),
+    )
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO users(email, display_name, password, group_id, is_super_admin, is_active, d_at)
+        VALUES (?, ?, ?, NULL, 1, 1, ?)
+        """,
+        ("super_admin", "super_admin", "super_admin", utc_now_iso()),
+    )
 
 
 def rebuild_ml_predictions_if_broken_fk(conn: sqlite3.Connection):
@@ -104,7 +158,12 @@ def rebuild_ml_predictions_if_broken_fk(conn: sqlite3.Connection):
 
 
 def ensure_schema(conn: sqlite3.Connection):
-    # Elimina tabelle non più richieste.
+    if get_user_version(conn) >= SCHEMA_VERSION and has_expected_tables(conn):
+        ensure_indexes(conn)
+        ensure_seed_data(conn)
+        return
+
+    # Elimina tabelle non piÃ¹ richieste.
     conn.execute("DROP TABLE IF EXISTS ticket_events")
     conn.execute("DROP TABLE IF EXISTS user_groups")
     conn.execute("DROP TABLE IF EXISTS user_roles")
@@ -174,7 +233,7 @@ def ensure_schema(conn: sqlite3.Connection):
 
     rebuild_ml_predictions_if_broken_fk(conn)
 
-    # Migrazione incrementale se il DB era già presente con vecchie colonne.
+    # Migrazione incrementale se il DB era giÃ  presente con vecchie colonne.
     if table_exists(conn, "users"):
         if not column_exists(conn, "users", "password"):
             conn.execute("ALTER TABLE users ADD COLUMN password TEXT NOT NULL DEFAULT 'changeme'")
@@ -243,37 +302,9 @@ def ensure_schema(conn: sqlite3.Connection):
     # Indici richiesti.
     conn.execute("DROP INDEX IF EXISTS idx_tickets_created_at")
     conn.execute("DROP INDEX IF EXISTS idx_ticket_events_ticket")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_d_at ON tickets(d_at)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_group ON tickets(assigned_group_id)")
-
-    # Seed minimo.
-    conn.execute(
-        """
-        INSERT OR IGNORE INTO groups(name, description, d_at)
-        VALUES (?, ?, ?)
-        """,
-        ("DEFAULT_GROUP", "Gruppo di default", utc_now_iso()),
-    )
-    default_group_row = conn.execute(
-        "SELECT id FROM groups WHERE name = ?",
-        ("DEFAULT_GROUP",),
-    ).fetchone()
-    default_group_id = default_group_row["id"] if default_group_row else None
-    conn.execute(
-        """
-        INSERT OR IGNORE INTO users(email, display_name, password, group_id, is_super_admin, is_active, d_at)
-        VALUES (?, ?, ?, ?, 0, 1, ?)
-        """,
-        ("admin@local", "Admin", "admin", default_group_id, utc_now_iso()),
-    )
-    conn.execute(
-        """
-        INSERT OR IGNORE INTO users(email, display_name, password, group_id, is_super_admin, is_active, d_at)
-        VALUES (?, ?, ?, NULL, 1, 1, ?)
-        """,
-        ("super_admin", "super_admin", "super_admin", utc_now_iso()),
-    )
+    ensure_indexes(conn)
+    ensure_seed_data(conn)
+    set_user_version(conn, SCHEMA_VERSION)
 
 
 def maybe_migrate_legacy_json(conn: sqlite3.Connection):
@@ -327,6 +358,8 @@ def to_ticket_dict(row: sqlite3.Row):
         "description": row["description"],
         "status": row["status"],
         "created_at": row["d_at"],
+        "created_by_user_id": row["created_by_user_id"] if "created_by_user_id" in row.keys() else None,
+        "assigned_group_id": row["assigned_group_id"] if "assigned_group_id" in row.keys() else None,
         "priority": row["priority"],
         "category": row["category"],
         "AzioniFatteInPassato": row["AzioniFatteInPassato"],
@@ -337,18 +370,43 @@ def to_ticket_dict(row: sqlite3.Row):
 def cmd_list_tickets(conn: sqlite3.Connection, payload=None):
     payload = payload or {}
     group_id = payload.get("group_id")
-    if group_id is None:
+    user_id = payload.get("user_id")
+    if group_id is None and user_id is None:
         rows = conn.execute(
             """
-            SELECT id, description, status, d_at, priority, category, AzioniFatteInPassato, Top5
+            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+                   priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             ORDER BY d_at DESC
             """
         ).fetchall()
+    elif group_id is not None and user_id is not None:
+        rows = conn.execute(
+            """
+            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+                   priority, category, AzioniFatteInPassato, Top5
+            FROM tickets
+            WHERE assigned_group_id = ? OR created_by_user_id = ?
+            ORDER BY d_at DESC
+            """,
+            (group_id, user_id),
+        ).fetchall()
+    elif user_id is not None:
+        rows = conn.execute(
+            """
+            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+                   priority, category, AzioniFatteInPassato, Top5
+            FROM tickets
+            WHERE created_by_user_id = ?
+            ORDER BY d_at DESC
+            """,
+            (user_id,),
+        ).fetchall()
     else:
         rows = conn.execute(
             """
-            SELECT id, description, status, d_at, priority, category, AzioniFatteInPassato, Top5
+            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+                   priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE assigned_group_id = ?
             ORDER BY d_at DESC
@@ -360,19 +418,42 @@ def cmd_list_tickets(conn: sqlite3.Connection, payload=None):
 
 def cmd_get_ticket(conn: sqlite3.Connection, payload):
     group_id = payload.get("group_id")
-    if group_id is None:
+    user_id = payload.get("user_id")
+    if group_id is None and user_id is None:
         row = conn.execute(
             """
-            SELECT id, description, status, d_at, priority, category, AzioniFatteInPassato, Top5
+            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+                   priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE id = ?
             """,
             (payload["id"],),
         ).fetchone()
+    elif group_id is not None and user_id is not None:
+        row = conn.execute(
+            """
+            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+                   priority, category, AzioniFatteInPassato, Top5
+            FROM tickets
+            WHERE id = ? AND (assigned_group_id = ? OR created_by_user_id = ?)
+            """,
+            (payload["id"], group_id, user_id),
+        ).fetchone()
+    elif user_id is not None:
+        row = conn.execute(
+            """
+            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+                   priority, category, AzioniFatteInPassato, Top5
+            FROM tickets
+            WHERE id = ? AND created_by_user_id = ?
+            """,
+            (payload["id"], user_id),
+        ).fetchone()
     else:
         row = conn.execute(
             """
-            SELECT id, description, status, d_at, priority, category, AzioniFatteInPassato, Top5
+            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+                   priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE id = ? AND assigned_group_id = ?
             """,
@@ -430,7 +511,8 @@ def cmd_create_ticket(conn: sqlite3.Connection, payload):
 
     row = conn.execute(
         """
-        SELECT id, description, status, d_at, priority, category, AzioniFatteInPassato, Top5
+        SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+               priority, category, AzioniFatteInPassato, Top5
         FROM tickets WHERE id = ?
         """,
         (ticket["id"],),
@@ -464,7 +546,8 @@ def cmd_update_ticket_ml(conn: sqlite3.Connection, payload):
 
     row = conn.execute(
         """
-        SELECT id, description, status, d_at, priority, category, AzioniFatteInPassato, Top5
+        SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+               priority, category, AzioniFatteInPassato, Top5
         FROM tickets WHERE id = ?
         """,
         (ticket_id,),
@@ -745,3 +828,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

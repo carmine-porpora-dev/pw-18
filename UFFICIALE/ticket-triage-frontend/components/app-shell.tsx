@@ -2,14 +2,14 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { Nav } from "./nav";
+import { getCachedSessionUser } from "@/lib/client/session-user";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [groupName, setGroupName] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    fetch("/api/auth/me", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
+    getCachedSessionUser()
       .then((data) => {
         if (!mounted || !data) return;
         const label = data.is_super_admin === 1 ? "Super Admin" : data.group_name;

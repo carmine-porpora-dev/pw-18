@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createTicket, listTickets, listTicketsByGroup } from "@/lib/server/ticket-store";
+import { createTicket, listTickets, listVisibleTicketsForUser } from "@/lib/server/ticket-store";
 import { getSessionUser } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
@@ -14,11 +14,8 @@ export async function GET() {
     const tickets = await listTickets();
     return NextResponse.json(tickets);
   }
-  if (typeof user.group_id !== "number") {
-    return NextResponse.json({ error: "Utente senza gruppo associato" }, { status: 403 });
-  }
 
-  const tickets = await listTicketsByGroup(user.group_id);
+  const tickets = await listVisibleTicketsForUser(user.id, user.group_id);
   return NextResponse.json(tickets);
 }
 

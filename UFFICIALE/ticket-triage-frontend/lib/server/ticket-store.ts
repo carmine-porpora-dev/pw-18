@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { DashboardSummary, Ticket } from "@/lib/types";
 import { runDb } from "@/lib/server/db";
-import { inferTicket } from "@/lib/server/ml";
 
 type MlFields = Pick<Ticket, "priority" | "category" | "AzioniFatteInPassato" | "Top5">;
 
@@ -20,14 +19,20 @@ export async function listTicketsByGroup(groupId: number) {
   return runDb<Ticket[]>("list_tickets", { group_id: groupId });
 }
 
+export async function listVisibleTicketsForUser(userId: number, groupId: number | null) {
+  return runDb<Ticket[]>("list_tickets", { user_id: userId, group_id: groupId });
+}
+
 export async function getTicketById(id: string) {
-  const ticket = await runDb<Ticket | null>("get_ticket", { id });
-  return hydrateTicketMlFields(ticket);
+  return runDb<Ticket | null>("get_ticket", { id });
 }
 
 export async function getTicketByIdForGroup(id: string, groupId: number) {
-  const ticket = await runDb<Ticket | null>("get_ticket", { id, group_id: groupId });
-  return hydrateTicketMlFields(ticket);
+  return runDb<Ticket | null>("get_ticket", { id, group_id: groupId });
+}
+
+export async function getTicketByIdVisibleToUser(id: string, userId: number, groupId: number | null) {
+  return runDb<Ticket | null>("get_ticket", { id, user_id: userId, group_id: groupId });
 }
 
 export async function createTicket(description: string, userId: number, userGroupId: number | null) {
@@ -71,25 +76,4 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
 
 export async function getDashboardSummaryForGroup(groupId: number): Promise<DashboardSummary> {
   return runDb<DashboardSummary>("dashboard_summary", { group_id: groupId });
-}
-
-async function hydrateTicketMlFields(ticket: Ticket | null) {
-  if (!ticket) return null;
-
-  const hasAction = typeof ticket.AzioniFatteInPassato === "string" && ticket.AzioniFatteInPassato.trim().length > 0;
-  const hasTop5 = Array.isArray(ticket.Top5) && ticket.Top5.length > 0;
-  if (hasAction && hasTop5) return ticket;
-
-  try {
-    const inferred = await inferTicket(ticket.description);
-    return runDb<Ticket | null>("update_ticket_ml", {
-      id: ticket.id,
-      priority: inferred.priority,
-      category: inferred.category,
-      AzioniFatteInPassato: inferred.AzioniFatteInPassato,
-      Top5: inferred.Top5
-    });
-  } catch {
-    return ticket;
-  }
 }

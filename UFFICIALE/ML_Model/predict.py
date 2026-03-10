@@ -15,6 +15,8 @@ print("### END DEBUG ###")
 
 MODEL_PRIORITA_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\model_priorita.pkl"
 MODEL_GRUPPO_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\model_gruppo.pkl"
+MODEL_PRIORITA = joblib.load(MODEL_PRIORITA_PATH)
+MODEL_GRUPPO = joblib.load(MODEL_GRUPPO_PATH)
 
 KEEP_FOR_EXPLAIN = {
     "attesa", "tempo", "ore", "minuti", "secondi", "giorni",
@@ -77,15 +79,11 @@ def explain_top5_filtered_for_class(ticket: str, pipe, pred: str, *,
 
 
 def predict_ticket(descrizione: str) -> tuple[str, str]:
-
-    model_priorita = joblib.load(MODEL_PRIORITA_PATH)
-    model_gruppo = joblib.load(MODEL_GRUPPO_PATH)
-
-    priorita = model_priorita.predict([descrizione])[0]
-    gruppo = model_gruppo.predict([descrizione])[0]
+    priorita = MODEL_PRIORITA.predict([descrizione])[0]
+    gruppo = MODEL_GRUPPO.predict([descrizione])[0]
 
     top5 = explain_top5_filtered_for_class(
-        descrizione, model_gruppo, gruppo
+        descrizione, MODEL_GRUPPO, gruppo
     )
     
     return priorita, gruppo, top5

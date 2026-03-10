@@ -11,6 +11,8 @@ export default function TicketDetailPage() {
   const params = useParams<{ id: string }>();
   const [t, setT] = useState<Ticket | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const showPastActions = typeof t?.AzioniFatteInPassato === "string" && t.AzioniFatteInPassato.trim().length > 0;
+  const showTop5 = Array.isArray(t?.Top5) && t.Top5.length > 0;
 
   useEffect(() => {
     api.getTicket(params.id)
@@ -51,17 +53,19 @@ export default function TicketDetailPage() {
             <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-700">{t.description}</p>
           </div>
 
-          <div className="rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-100">
-            <div className="text-sm font-medium">Azione Fatta In Passato</div>
-            <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-700">{t.AzioniFatteInPassato ?? "-"}</p>
-          </div>
+          {showPastActions && (
+            <div className="rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-100">
+              <div className="text-sm font-medium">Azione Fatta In Passato</div>
+              <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-700">{t.AzioniFatteInPassato}</p>
+            </div>
+          )}
 
-          <div className="rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-100">
-            <div className="text-sm font-medium">Parole che influenzano la scelta</div>
-            <p className="mt-2 text-sm text-zinc-700">
-              {t.Top5 && t.Top5.length ? t.Top5.join(", ") : "-"}
-            </p>
-          </div>
+          {showTop5 && (
+            <div className="rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-100">
+              <div className="text-sm font-medium">Parole che influenzano la scelta</div>
+              <p className="mt-2 text-sm text-zinc-700">{t.Top5.join(", ")}</p>
+            </div>
+          )}
         </div>
       )}
     </AppShell>

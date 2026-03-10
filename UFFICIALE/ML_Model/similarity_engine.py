@@ -28,7 +28,7 @@ def suggerisci_azione(descrizione, gruppo_predetto, soglia=0.25):
     best_score = sims[best_local]
 
     if best_score < soglia:
-        return "Nessuna azione consigliata (bassa similarità)"
+        return "Nessuna azione consigliata"
 
     best_pos = pos[best_local]
     return df.iloc[best_pos]["AzioneFattaInPassato"]

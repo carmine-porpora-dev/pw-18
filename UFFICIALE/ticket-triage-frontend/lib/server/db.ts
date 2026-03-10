@@ -26,7 +26,11 @@ export async function runDb<T>(command: DbCommand, payload?: object): Promise<T>
   try {
     const { stdout } = await execFileAsync(pythonExecutable, args, {
       cwd: process.cwd(),
-      maxBuffer: 1024 * 1024 * 10
+      maxBuffer: 1024 * 1024 * 10,
+      env: {
+        ...process.env,
+        PYTHONIOENCODING: "utf-8"
+      }
     });
     return JSON.parse(stdout.trim()) as T;
   } catch (error: any) {

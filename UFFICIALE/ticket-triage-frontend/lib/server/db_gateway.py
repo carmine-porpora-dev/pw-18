@@ -11,6 +11,13 @@ DB_PATH = DATA_DIR / "tickets.db"
 LEGACY_JSON_PATH = DATA_DIR / "tickets.json"
 
 
+def configure_stdio():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 def utc_now_iso():
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -714,6 +721,8 @@ COMMANDS = {
 
 
 def main():
+    configure_stdio()
+
     if len(sys.argv) < 2:
         raise SystemExit("Missing command")
 

@@ -20,7 +20,10 @@ export async function POST(req: Request) {
 
   const user = await authenticateUser(email, password);
   if (!user) {
-    return NextResponse.json({ error: "Credenziali non valide" }, { status: 401 });
+    return new NextResponse("Credenziali non valide", {
+      status: 401,
+      headers: { "Content-Type": "text/plain; charset=utf-8" }
+    });
   }
 
   const res = NextResponse.json({

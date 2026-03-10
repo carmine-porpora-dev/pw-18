@@ -53,12 +53,55 @@ function filterLabel(filter: TicketFilterKey | null) {
   return "Lista ticket con priorita/categoria";
 }
 
+function toCsvValue(value: string | number | null | undefined) {
+  const text = value == null ? "" : String(value);
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function exportTicketsToCsv(tickets: Ticket[]) {
+  const header = [
+    "id",
+    "description",
+    "status",
+    "priority",
+    "category",
+    "created_at",
+    "created_by_user_id",
+    "assigned_group_id"
+  ];
+
+  const rows = tickets.map((ticket) =>
+    [
+      ticket.id,
+      ticket.description,
+      ticket.status,
+      ticket.priority,
+      ticket.category,
+      ticket.created_at,
+      ticket.created_by_user_id,
+      ticket.assigned_group_id
+    ]
+      .map((value) => toCsvValue(value))
+      .join(",")
+  );
+
+  const csv = [header.join(","), ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `tickets-gruppo-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function TicketsPage() {
   const searchParams = useSearchParams();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [me, setMe] = useState<Me | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedTicketIds, setSelectedTicketIds] = useState<string[]>([]);
   const rawFilter = searchParams.get("filter");
   const filter: TicketFilterKey | null =
     rawFilter === "opened_30d" ||
@@ -78,6 +121,14 @@ export default function TicketsPage() {
           (t) => t.created_by_user_id === me.id && t.assigned_group_id !== me.group_id
         )
       : [];
+  const groupTicketIds = groupTickets.map((ticket) => ticket.id);
+  const groupTicketIdsKey = groupTicketIds.join("|");
+
+  useEffect(() => {
+    setSelectedTicketIds((currentIds) =>
+      currentIds.filter((ticketId) => groupTicketIds.includes(ticketId))
+    );
+  }, [groupTicketIdsKey]);
 
   useEffect(() => {
     setLoading(true);
@@ -92,6 +143,27 @@ export default function TicketsPage() {
       .catch((e) => setErr(e?.message ?? "Errore caricamento"))
       .finally(() => setLoading(false));
   }, []);
+
+  function toggleTicketSelection(ticketId: string) {
+    setSelectedTicketIds((currentIds) =>
+      currentIds.includes(ticketId)
+        ? currentIds.filter((id) => id !== ticketId)
+        : [...currentIds, ticketId]
+    );
+  }
+
+  function toggleSelectAllGroupTickets() {
+    const allSelected =
+      groupTicketIds.length > 0 && groupTicketIds.every((ticketId) => selectedTicketIds.includes(ticketId));
+
+    setSelectedTicketIds(allSelected ? [] : groupTicketIds);
+  }
+
+  function exportSelectedGroupTickets() {
+    const selectedTickets = groupTickets.filter((ticket) => selectedTicketIds.includes(ticket.id));
+    if (selectedTickets.length === 0) return;
+    exportTicketsToCsv(selectedTickets);
+  }
 
   return (
     <AppShell>
@@ -112,10 +184,28 @@ export default function TicketsPage() {
         ) : (
           <div className="grid gap-6">
             <div>
-              <div className="mb-3 text-sm font-medium uppercase tracking-[0.18em] text-zinc-500">
-                {me?.is_super_admin === 1 ? "Tutti i ticket" : "Ticket del gruppo"}
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="text-sm font-medium uppercase tracking-[0.18em] text-zinc-500">
+                  {me?.is_super_admin === 1 ? "Tutti i ticket" : "Ticket del gruppo"}
+                </div>
+                {me?.is_super_admin !== 1 && (
+                  <button
+                    type="button"
+                    onClick={exportSelectedGroupTickets}
+                    disabled={selectedTicketIds.length === 0}
+                    className="rounded-xl bg-zinc-900 px-3 py-2 text-sm text-white disabled:opacity-50"
+                  >
+                    Esporta CSV
+                  </button>
+                )}
               </div>
-              <TicketTable tickets={groupTickets} />
+              <TicketTable
+                tickets={groupTickets}
+                selectable={me?.is_super_admin !== 1}
+                selectedIds={selectedTicketIds}
+                onToggleTicket={toggleTicketSelection}
+                onToggleAll={toggleSelectAllGroupTickets}
+              />
             </div>
 
             {me?.is_super_admin !== 1 && (

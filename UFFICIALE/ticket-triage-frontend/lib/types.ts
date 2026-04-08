@@ -4,6 +4,7 @@ export type Ticket = {
   id: string;
   description: string;
   created_at: string; // ISO
+  closed_at?: string | null; // ISO
   status: TicketStatus;
   created_by_user_id?: number;
   assigned_group_id?: number | null;

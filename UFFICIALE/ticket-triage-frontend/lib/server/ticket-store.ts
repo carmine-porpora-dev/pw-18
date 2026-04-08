@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { DashboardSummary, Ticket } from "@/lib/types";
 import { runDb } from "@/lib/server/db";
+import { inferTicket } from "@/lib/server/ml";
 
 type MlFields = Pick<Ticket, "priority" | "category" | "AzioniFatteInPassato" | "Top5">;
 
@@ -39,7 +40,8 @@ export async function createTicket(description: string, userId: number, userGrou
   let ml = defaultMlFields;
   try {
     ml = await inferTicket(description);
-  } catch {
+  } catch (error) {
+    console.error("Errore durante l'inferenza ML del ticket", error);
     ml = defaultMlFields;
   }
 

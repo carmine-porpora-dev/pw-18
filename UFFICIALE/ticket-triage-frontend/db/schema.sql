@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   description TEXT NOT NULL,
   status TEXT NOT NULL,
   d_at TEXT NOT NULL,
+  closed_at TEXT,
   created_by_user_id INTEGER,
   assigned_group_id INTEGER,
   visibility_scope TEXT NOT NULL DEFAULT 'group',
@@ -59,5 +60,6 @@ CREATE TABLE IF NOT EXISTS dashboard_snapshots (
 );
 
 CREATE INDEX IF NOT EXISTS idx_tickets_d_at ON tickets(d_at);
+CREATE INDEX IF NOT EXISTS idx_tickets_closed_at ON tickets(closed_at);
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
 CREATE INDEX IF NOT EXISTS idx_tickets_group ON tickets(assigned_group_id);

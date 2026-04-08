@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = BASE_DIR / ".data"
 DB_PATH = DATA_DIR / "tickets.db"
 LEGACY_JSON_PATH = DATA_DIR / "tickets.json"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def configure_stdio():
@@ -62,6 +62,7 @@ def has_expected_tables(conn: sqlite3.Connection):
 
 def ensure_indexes(conn: sqlite3.Connection):
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_d_at ON tickets(d_at)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_closed_at ON tickets(closed_at)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_group ON tickets(assigned_group_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_creator ON tickets(created_by_user_id)")
@@ -195,6 +196,7 @@ def ensure_schema(conn: sqlite3.Connection):
           description TEXT NOT NULL,
           status TEXT NOT NULL,
           d_at TEXT NOT NULL,
+          closed_at TEXT,
           created_by_user_id INTEGER,
           assigned_group_id INTEGER,
           visibility_scope TEXT NOT NULL DEFAULT 'group',
@@ -274,6 +276,15 @@ def ensure_schema(conn: sqlite3.Connection):
             conn.execute("ALTER TABLE tickets ADD COLUMN AzioniFatteInPassato TEXT")
         if not column_exists(conn, "tickets", "Top5"):
             conn.execute("ALTER TABLE tickets ADD COLUMN Top5 TEXT")
+        if not column_exists(conn, "tickets", "closed_at"):
+            conn.execute("ALTER TABLE tickets ADD COLUMN closed_at TEXT")
+        conn.execute(
+            """
+            UPDATE tickets
+            SET closed_at = COALESCE(closed_at, d_at)
+            WHERE status = 'closed' AND closed_at IS NULL
+            """
+        )
 
     if table_exists(conn, "ml_predictions"):
         if not column_exists(conn, "ml_predictions", "priority"):
@@ -325,15 +336,21 @@ def maybe_migrate_legacy_json(conn: sqlite3.Connection):
         conn.execute(
             """
             INSERT OR IGNORE INTO tickets(
-              id, description, status, d_at, priority, category, AzioniFatteInPassato, Top5
+              id, description, status, d_at, closed_at, priority, category, AzioniFatteInPassato, Top5
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 row.get("id"),
                 row.get("description", ""),
                 row.get("status", "open"),
                 row.get("d_at") or row.get("created_at") or utc_now_iso(),
+                row.get("closed_at")
+                or (
+                    row.get("d_at") or row.get("created_at") or utc_now_iso()
+                    if row.get("status") == "closed"
+                    else None
+                ),
                 row.get("priority") or row.get("predicted_priority"),
                 row.get("category") or row.get("predicted_category"),
                 row.get("AzioniFatteInPassato"),
@@ -358,6 +375,7 @@ def to_ticket_dict(row: sqlite3.Row):
         "description": row["description"],
         "status": row["status"],
         "created_at": row["d_at"],
+        "closed_at": row["closed_at"] if "closed_at" in row.keys() else None,
         "created_by_user_id": row["created_by_user_id"] if "created_by_user_id" in row.keys() else None,
         "assigned_group_id": row["assigned_group_id"] if "assigned_group_id" in row.keys() else None,
         "priority": row["priority"],
@@ -374,7 +392,7 @@ def cmd_list_tickets(conn: sqlite3.Connection, payload=None):
     if group_id is None and user_id is None:
         rows = conn.execute(
             """
-            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+            SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
                    priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             ORDER BY d_at DESC
@@ -383,7 +401,7 @@ def cmd_list_tickets(conn: sqlite3.Connection, payload=None):
     elif group_id is not None and user_id is not None:
         rows = conn.execute(
             """
-            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+            SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
                    priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE assigned_group_id = ? OR created_by_user_id = ?
@@ -394,7 +412,7 @@ def cmd_list_tickets(conn: sqlite3.Connection, payload=None):
     elif user_id is not None:
         rows = conn.execute(
             """
-            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+            SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
                    priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE created_by_user_id = ?
@@ -405,7 +423,7 @@ def cmd_list_tickets(conn: sqlite3.Connection, payload=None):
     else:
         rows = conn.execute(
             """
-            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+            SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
                    priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE assigned_group_id = ?
@@ -422,7 +440,7 @@ def cmd_get_ticket(conn: sqlite3.Connection, payload):
     if group_id is None and user_id is None:
         row = conn.execute(
             """
-            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+            SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
                    priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE id = ?
@@ -432,7 +450,7 @@ def cmd_get_ticket(conn: sqlite3.Connection, payload):
     elif group_id is not None and user_id is not None:
         row = conn.execute(
             """
-            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+            SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
                    priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE id = ? AND (assigned_group_id = ? OR created_by_user_id = ?)
@@ -442,7 +460,7 @@ def cmd_get_ticket(conn: sqlite3.Connection, payload):
     elif user_id is not None:
         row = conn.execute(
             """
-            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+            SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
                    priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE id = ? AND created_by_user_id = ?
@@ -452,7 +470,7 @@ def cmd_get_ticket(conn: sqlite3.Connection, payload):
     else:
         row = conn.execute(
             """
-            SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+            SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
                    priority, category, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE id = ? AND assigned_group_id = ?
@@ -470,16 +488,18 @@ def cmd_create_ticket(conn: sqlite3.Connection, payload):
     conn.execute(
         """
         INSERT INTO tickets(
-          id, description, status, d_at, created_by_user_id, assigned_group_id,
+          id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
           visibility_scope, priority, category, AzioniFatteInPassato, Top5
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             ticket["id"],
             ticket["description"],
             ticket["status"],
             ticket["created_at"],
+            ticket.get("closed_at")
+            or (ticket["created_at"] if ticket["status"] == "closed" else None),
             ticket.get("created_by_user_id"),
             ticket.get("assigned_group_id"),
             ticket.get("visibility_scope", "group"),
@@ -511,7 +531,7 @@ def cmd_create_ticket(conn: sqlite3.Connection, payload):
 
     row = conn.execute(
         """
-        SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+        SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
                priority, category, AzioniFatteInPassato, Top5
         FROM tickets WHERE id = ?
         """,
@@ -546,7 +566,7 @@ def cmd_update_ticket_ml(conn: sqlite3.Connection, payload):
 
     row = conn.execute(
         """
-        SELECT id, description, status, d_at, created_by_user_id, assigned_group_id,
+        SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
                priority, category, AzioniFatteInPassato, Top5
         FROM tickets WHERE id = ?
         """,
@@ -580,7 +600,7 @@ def cmd_dashboard_summary_filtered(conn: sqlite3.Connection, group_id):
             """
             SELECT COUNT(*) AS c
             FROM tickets
-            WHERE status = 'closed' AND date(d_at) BETWEEN ? AND ?
+            WHERE status = 'closed' AND closed_at IS NOT NULL AND date(closed_at) BETWEEN ? AND ?
             """,
             (start, end),
         ).fetchone()["c"]
@@ -605,7 +625,7 @@ def cmd_dashboard_summary_filtered(conn: sqlite3.Connection, group_id):
             """
             SELECT COUNT(*) AS c
             FROM tickets
-            WHERE assigned_group_id = ? AND status = 'closed' AND date(d_at) BETWEEN ? AND ?
+            WHERE assigned_group_id = ? AND status = 'closed' AND closed_at IS NOT NULL AND date(closed_at) BETWEEN ? AND ?
             """,
             (group_id, start, end),
         ).fetchone()["c"]
@@ -661,10 +681,10 @@ def cmd_dashboard_summary_filtered(conn: sqlite3.Connection, group_id):
             SELECT days.day AS date, COALESCE(t.c, 0) AS closed
             FROM days
             LEFT JOIN (
-              SELECT date(d_at) AS d, COUNT(*) AS c
+              SELECT date(closed_at) AS d, COUNT(*) AS c
               FROM tickets
-              WHERE status = 'closed'
-              GROUP BY date(d_at)
+              WHERE status = 'closed' AND closed_at IS NOT NULL
+              GROUP BY date(closed_at)
             ) t ON t.d = days.day
             ORDER BY days.day
             """,
@@ -681,10 +701,10 @@ def cmd_dashboard_summary_filtered(conn: sqlite3.Connection, group_id):
             SELECT days.day AS date, COALESCE(t.c, 0) AS closed
             FROM days
             LEFT JOIN (
-              SELECT date(d_at) AS d, COUNT(*) AS c
+              SELECT date(closed_at) AS d, COUNT(*) AS c
               FROM tickets
-              WHERE assigned_group_id = ? AND status = 'closed'
-              GROUP BY date(d_at)
+              WHERE assigned_group_id = ? AND status = 'closed' AND closed_at IS NOT NULL
+              GROUP BY date(closed_at)
             ) t ON t.d = days.day
             ORDER BY days.day
             """,

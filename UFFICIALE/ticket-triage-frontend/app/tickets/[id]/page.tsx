@@ -63,7 +63,7 @@ export default function TicketDetailPage() {
           {showTop5 && (
             <div className="rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-100">
               <div className="text-sm font-medium">Parole che influenzano la scelta</div>
-              <p className="mt-2 text-sm text-zinc-700">{t.Top5.join(", ")}</p>
+              <p className="mt-2 text-sm text-zinc-700">{t.Top5?.join(", ")}</p>
             </div>
           )}
         </div>

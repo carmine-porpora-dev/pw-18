@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { TicketTable } from "@/components/ticket-table";
@@ -39,7 +39,7 @@ function applyTicketFilter(tickets: Ticket[], filter: TicketFilterKey | null) {
     return tickets.filter((t) => t.status === "resolved" && isInLast30Days(t.created_at));
   }
   if (filter === "closed_30d") {
-    return tickets.filter((t) => t.status === "closed" && isInLast30Days(t.created_at));
+    return tickets.filter((t) => t.status === "closed" && t.closed_at && isInLast30Days(t.closed_at));
   }
 
   return tickets;
@@ -95,7 +95,7 @@ function exportTicketsToCsv(tickets: Ticket[]) {
   URL.revokeObjectURL(url);
 }
 
-export default function TicketsPage() {
+function TicketsPageContent() {
   const searchParams = useSearchParams();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [me, setMe] = useState<Me | null>(null);
@@ -226,5 +226,13 @@ export default function TicketsPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+export default function TicketsPage() {
+  return (
+    <Suspense fallback={<AppShell><div className="text-sm text-zinc-500">Caricamento...</div></AppShell>}>
+      <TicketsPageContent />
+    </Suspense>
   );
 }

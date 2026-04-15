@@ -1,21 +1,27 @@
 import Link from "next/link";
+import { ResolveTicketButton } from "@/components/resolve-ticket-button";
+import type { ClientSessionUser } from "@/lib/client/session-user";
 import { Ticket } from "@/lib/types";
 import { badgeForPriority, cn, formatDate } from "@/lib/utils";
 
 type TicketTableProps = {
   tickets: Ticket[];
+  me?: ClientSessionUser | null;
   selectable?: boolean;
   selectedIds?: string[];
   onToggleTicket?: (ticketId: string) => void;
   onToggleAll?: () => void;
+  onTicketResolved?: (ticket: Ticket) => void;
 };
 
 export function TicketTable({
   tickets,
+  me = null,
   selectable = false,
   selectedIds = [],
   onToggleTicket,
-  onToggleAll
+  onToggleAll,
+  onTicketResolved
 }: TicketTableProps) {
   const allSelected = tickets.length > 0 && tickets.every((ticket) => selectedIds.includes(ticket.id));
 
@@ -38,6 +44,7 @@ export function TicketTable({
             <th className="px-4 py-3 text-left font-medium">Stato</th>
             <th className="px-4 py-3 text-left font-medium">Priorita</th>
             <th className="px-4 py-3 text-left font-medium">Creato</th>
+            <th className="px-4 py-3 text-left font-medium">Azioni</th>
           </tr>
         </thead>
         <tbody>
@@ -69,6 +76,9 @@ export function TicketTable({
                 </span>
               </td>
               <td className="px-4 py-3 text-zinc-600">{formatDate(t.created_at)}</td>
+              <td className="px-4 py-3">
+                <ResolveTicketButton ticket={t} me={me} onResolved={onTicketResolved} />
+              </td>
             </tr>
           ))}
         </tbody>

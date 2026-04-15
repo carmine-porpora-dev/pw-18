@@ -5,15 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { TicketTable } from "@/components/ticket-table";
 import { api } from "@/lib/api";
-import { getCachedSessionUser } from "@/lib/client/session-user";
+import { getCachedSessionUser, type ClientSessionUser } from "@/lib/client/session-user";
 import { Ticket } from "@/lib/types";
 
 type TicketFilterKey = "opened_30d" | "open_now" | "resolved_30d" | "closed_30d";
-type Me = {
-  id: number;
-  group_id: number | null;
-  is_super_admin: number;
-};
 
 function isInLast30Days(isoDate: string) {
   const ticketDate = new Date(isoDate);
@@ -66,8 +61,12 @@ function exportTicketsToCsv(tickets: Ticket[]) {
     "priority",
     "category",
     "created_at",
+    "closed_at",
+    "closure_reason",
+    "AzioniFatteInPassato",
     "created_by_user_id",
-    "assigned_group_id"
+    "assigned_group_id",
+    "assigned_user_id"
   ];
 
   const rows = tickets.map((ticket) =>
@@ -78,8 +77,12 @@ function exportTicketsToCsv(tickets: Ticket[]) {
       ticket.priority,
       ticket.category,
       ticket.created_at,
+      ticket.closed_at,
+      ticket.closure_reason,
+      ticket.AzioniFatteInPassato,
       ticket.created_by_user_id,
-      ticket.assigned_group_id
+      ticket.assigned_group_id,
+      ticket.assigned_user_id
     ]
       .map((value) => toCsvValue(value))
       .join(",")
@@ -98,7 +101,7 @@ function exportTicketsToCsv(tickets: Ticket[]) {
 function TicketsPageContent() {
   const searchParams = useSearchParams();
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [me, setMe] = useState<Me | null>(null);
+  const [me, setMe] = useState<ClientSessionUser | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTicketIds, setSelectedTicketIds] = useState<string[]>([]);
@@ -165,6 +168,12 @@ function TicketsPageContent() {
     exportTicketsToCsv(selectedTickets);
   }
 
+  function handleTicketResolved(updatedTicket: Ticket) {
+    setTickets((currentTickets) =>
+      currentTickets.map((ticket) => (ticket.id === updatedTicket.id ? updatedTicket : ticket))
+    );
+  }
+
   return (
     <AppShell>
       <div className="flex items-start justify-between gap-4">
@@ -201,10 +210,12 @@ function TicketsPageContent() {
               </div>
               <TicketTable
                 tickets={groupTickets}
+                me={me}
                 selectable={me?.is_super_admin !== 1}
                 selectedIds={selectedTicketIds}
                 onToggleTicket={toggleTicketSelection}
                 onToggleAll={toggleSelectAllGroupTickets}
+                onTicketResolved={handleTicketResolved}
               />
             </div>
 
@@ -214,7 +225,7 @@ function TicketsPageContent() {
                   Creati da me
                 </div>
                 {createdByMeTickets.length > 0 ? (
-                  <TicketTable tickets={createdByMeTickets} />
+                  <TicketTable tickets={createdByMeTickets} me={me} onTicketResolved={handleTicketResolved} />
                 ) : (
                   <div className="rounded-2xl bg-white px-4 py-5 text-sm text-zinc-500 ring-1 ring-zinc-100">
                     Nessun ticket creato da te assegnato ad altri gruppi.

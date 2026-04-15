@@ -72,6 +72,20 @@ export async function createTicket(description: string, userId: number, userGrou
   });
 }
 
+export async function resolveTicket(
+  id: string,
+  userId: number,
+  closureReason: string,
+  actionsTaken: string
+) {
+  return runDb<Ticket>("resolve_ticket", {
+    id,
+    resolver_user_id: userId,
+    closure_reason: closureReason,
+    actions_taken: actionsTaken
+  });
+}
+
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   return runDb<DashboardSummary>("dashboard_summary");
 }

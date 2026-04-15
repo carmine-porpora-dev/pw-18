@@ -1,4 +1,4 @@
-import { CreateTicketInput, DashboardSummary, Ticket } from "./types";
+import { CreateTicketInput, DashboardSummary, ResolveTicketInput, Ticket } from "./types";
 
 const configuredBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ?? "";
 const defaultDevBaseUrl = "http://127.0.0.1:8000";
@@ -68,7 +68,18 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
     }
 
     const text = await res.text().catch(() => "");
-    lastError = new Error(`API ${res.status}: ${text || res.statusText}`);
+    let errorMessage = text || res.statusText;
+
+    try {
+      const parsed = text ? JSON.parse(text) : null;
+      if (parsed && typeof parsed.error === "string" && parsed.error.trim()) {
+        errorMessage = parsed.error.trim();
+      }
+    } catch {
+      // Manteniamo il testo grezzo se la risposta non e JSON valido.
+    }
+
+    lastError = new Error(errorMessage);
     break;
   }
 
@@ -80,5 +91,7 @@ export const api = {
   getTicket: (id: string) => http<Ticket>(`/api/tickets/${id}`),
   createTicket: (payload: CreateTicketInput) =>
     http<Ticket>("/api/tickets", { method: "POST", body: JSON.stringify(payload) }),
+  resolveTicket: (id: string, payload: ResolveTicketInput) =>
+    http<Ticket>(`/api/tickets/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   dashboardSummary: () => http<DashboardSummary>("/api/dashboard/summary")
 };

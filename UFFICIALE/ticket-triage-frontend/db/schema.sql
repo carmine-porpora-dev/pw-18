@@ -27,13 +27,16 @@ CREATE TABLE IF NOT EXISTS tickets (
   closed_at TEXT,
   created_by_user_id INTEGER,
   assigned_group_id INTEGER,
+  assigned_user_id INTEGER,
   visibility_scope TEXT NOT NULL DEFAULT 'group',
   priority TEXT,
   category TEXT,
+  closure_reason TEXT,
   AzioniFatteInPassato TEXT,
   Top5 TEXT,
   FOREIGN KEY (created_by_user_id) REFERENCES users(id),
-  FOREIGN KEY (assigned_group_id) REFERENCES groups(id)
+  FOREIGN KEY (assigned_group_id) REFERENCES groups(id),
+  FOREIGN KEY (assigned_user_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS ml_predictions (
@@ -63,3 +66,4 @@ CREATE INDEX IF NOT EXISTS idx_tickets_d_at ON tickets(d_at);
 CREATE INDEX IF NOT EXISTS idx_tickets_closed_at ON tickets(closed_at);
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
 CREATE INDEX IF NOT EXISTS idx_tickets_group ON tickets(assigned_group_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_assigned_user ON tickets(assigned_user_id);

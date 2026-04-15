@@ -8,6 +8,8 @@ export type Ticket = {
   status: TicketStatus;
   created_by_user_id?: number;
   assigned_group_id?: number | null;
+  assigned_user_id?: number | null;
+  closure_reason?: string | null;
 
   // campi triage ML
   category?: string;
@@ -18,6 +20,11 @@ export type Ticket = {
 
 export type CreateTicketInput = {
   description: string;
+};
+
+export type ResolveTicketInput = {
+  closure_reason: string;
+  actions_taken: string;
 };
 
 export type DashboardSummary = {

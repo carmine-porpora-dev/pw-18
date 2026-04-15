@@ -1,4 +1,4 @@
-﻿import json
+import json
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = BASE_DIR / ".data"
 DB_PATH = DATA_DIR / "tickets.db"
 LEGACY_JSON_PATH = DATA_DIR / "tickets.json"
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 def configure_stdio():
@@ -66,6 +66,7 @@ def ensure_indexes(conn: sqlite3.Connection):
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_group ON tickets(assigned_group_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_creator ON tickets(created_by_user_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tickets_assigned_user ON tickets(assigned_user_id)")
 
 
 def ensure_seed_data(conn: sqlite3.Connection):
@@ -164,7 +165,7 @@ def ensure_schema(conn: sqlite3.Connection):
         ensure_seed_data(conn)
         return
 
-    # Elimina tabelle non piÃ¹ richieste.
+    # Elimina tabelle non più richieste.
     conn.execute("DROP TABLE IF EXISTS ticket_events")
     conn.execute("DROP TABLE IF EXISTS user_groups")
     conn.execute("DROP TABLE IF EXISTS user_roles")
@@ -199,13 +200,16 @@ def ensure_schema(conn: sqlite3.Connection):
           closed_at TEXT,
           created_by_user_id INTEGER,
           assigned_group_id INTEGER,
+          assigned_user_id INTEGER,
           visibility_scope TEXT NOT NULL DEFAULT 'group',
           priority TEXT,
           category TEXT,
+          closure_reason TEXT,
           AzioniFatteInPassato TEXT,
           Top5 TEXT,
           FOREIGN KEY (created_by_user_id) REFERENCES users(id),
-          FOREIGN KEY (assigned_group_id) REFERENCES groups(id)
+          FOREIGN KEY (assigned_group_id) REFERENCES groups(id),
+          FOREIGN KEY (assigned_user_id) REFERENCES users(id)
         );
 
         CREATE TABLE IF NOT EXISTS ml_predictions (
@@ -235,7 +239,7 @@ def ensure_schema(conn: sqlite3.Connection):
 
     rebuild_ml_predictions_if_broken_fk(conn)
 
-    # Migrazione incrementale se il DB era giÃ  presente con vecchie colonne.
+    # Migrazione incrementale se il DB era già presente con vecchie colonne.
     if table_exists(conn, "users"):
         if not column_exists(conn, "users", "password"):
             conn.execute("ALTER TABLE users ADD COLUMN password TEXT NOT NULL DEFAULT 'changeme'")
@@ -278,6 +282,10 @@ def ensure_schema(conn: sqlite3.Connection):
             conn.execute("ALTER TABLE tickets ADD COLUMN Top5 TEXT")
         if not column_exists(conn, "tickets", "closed_at"):
             conn.execute("ALTER TABLE tickets ADD COLUMN closed_at TEXT")
+        if not column_exists(conn, "tickets", "assigned_user_id"):
+            conn.execute("ALTER TABLE tickets ADD COLUMN assigned_user_id INTEGER")
+        if not column_exists(conn, "tickets", "closure_reason"):
+            conn.execute("ALTER TABLE tickets ADD COLUMN closure_reason TEXT")
         conn.execute(
             """
             UPDATE tickets
@@ -378,8 +386,10 @@ def to_ticket_dict(row: sqlite3.Row):
         "closed_at": row["closed_at"] if "closed_at" in row.keys() else None,
         "created_by_user_id": row["created_by_user_id"] if "created_by_user_id" in row.keys() else None,
         "assigned_group_id": row["assigned_group_id"] if "assigned_group_id" in row.keys() else None,
+        "assigned_user_id": row["assigned_user_id"] if "assigned_user_id" in row.keys() else None,
         "priority": row["priority"],
         "category": row["category"],
+        "closure_reason": row["closure_reason"] if "closure_reason" in row.keys() else None,
         "AzioniFatteInPassato": row["AzioniFatteInPassato"],
         "Top5": parse_top5(row["Top5"]),
     }
@@ -393,7 +403,7 @@ def cmd_list_tickets(conn: sqlite3.Connection, payload=None):
         rows = conn.execute(
             """
             SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
-                   priority, category, AzioniFatteInPassato, Top5
+                   assigned_user_id, priority, category, closure_reason, AzioniFatteInPassato, Top5
             FROM tickets
             ORDER BY d_at DESC
             """
@@ -402,7 +412,7 @@ def cmd_list_tickets(conn: sqlite3.Connection, payload=None):
         rows = conn.execute(
             """
             SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
-                   priority, category, AzioniFatteInPassato, Top5
+                   assigned_user_id, priority, category, closure_reason, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE assigned_group_id = ? OR created_by_user_id = ?
             ORDER BY d_at DESC
@@ -413,7 +423,7 @@ def cmd_list_tickets(conn: sqlite3.Connection, payload=None):
         rows = conn.execute(
             """
             SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
-                   priority, category, AzioniFatteInPassato, Top5
+                   assigned_user_id, priority, category, closure_reason, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE created_by_user_id = ?
             ORDER BY d_at DESC
@@ -424,7 +434,7 @@ def cmd_list_tickets(conn: sqlite3.Connection, payload=None):
         rows = conn.execute(
             """
             SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
-                   priority, category, AzioniFatteInPassato, Top5
+                   assigned_user_id, priority, category, closure_reason, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE assigned_group_id = ?
             ORDER BY d_at DESC
@@ -441,7 +451,7 @@ def cmd_get_ticket(conn: sqlite3.Connection, payload):
         row = conn.execute(
             """
             SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
-                   priority, category, AzioniFatteInPassato, Top5
+                   assigned_user_id, priority, category, closure_reason, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE id = ?
             """,
@@ -451,7 +461,7 @@ def cmd_get_ticket(conn: sqlite3.Connection, payload):
         row = conn.execute(
             """
             SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
-                   priority, category, AzioniFatteInPassato, Top5
+                   assigned_user_id, priority, category, closure_reason, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE id = ? AND (assigned_group_id = ? OR created_by_user_id = ?)
             """,
@@ -461,7 +471,7 @@ def cmd_get_ticket(conn: sqlite3.Connection, payload):
         row = conn.execute(
             """
             SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
-                   priority, category, AzioniFatteInPassato, Top5
+                   assigned_user_id, priority, category, closure_reason, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE id = ? AND created_by_user_id = ?
             """,
@@ -471,7 +481,7 @@ def cmd_get_ticket(conn: sqlite3.Connection, payload):
         row = conn.execute(
             """
             SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
-                   priority, category, AzioniFatteInPassato, Top5
+                   assigned_user_id, priority, category, closure_reason, AzioniFatteInPassato, Top5
             FROM tickets
             WHERE id = ? AND assigned_group_id = ?
             """,
@@ -489,9 +499,9 @@ def cmd_create_ticket(conn: sqlite3.Connection, payload):
         """
         INSERT INTO tickets(
           id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
-          visibility_scope, priority, category, AzioniFatteInPassato, Top5
+          assigned_user_id, visibility_scope, priority, category, closure_reason, AzioniFatteInPassato, Top5
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             ticket["id"],
@@ -502,9 +512,11 @@ def cmd_create_ticket(conn: sqlite3.Connection, payload):
             or (ticket["created_at"] if ticket["status"] == "closed" else None),
             ticket.get("created_by_user_id"),
             ticket.get("assigned_group_id"),
+            ticket.get("assigned_user_id"),
             ticket.get("visibility_scope", "group"),
             ticket.get("priority"),
             ticket.get("category"),
+            ticket.get("closure_reason"),
             ticket.get("AzioniFatteInPassato"),
             top5_json,
         ),
@@ -532,7 +544,7 @@ def cmd_create_ticket(conn: sqlite3.Connection, payload):
     row = conn.execute(
         """
         SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
-               priority, category, AzioniFatteInPassato, Top5
+               assigned_user_id, priority, category, closure_reason, AzioniFatteInPassato, Top5
         FROM tickets WHERE id = ?
         """,
         (ticket["id"],),
@@ -567,7 +579,39 @@ def cmd_update_ticket_ml(conn: sqlite3.Connection, payload):
     row = conn.execute(
         """
         SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
-               priority, category, AzioniFatteInPassato, Top5
+               assigned_user_id, priority, category, closure_reason, AzioniFatteInPassato, Top5
+        FROM tickets WHERE id = ?
+        """,
+        (ticket_id,),
+    ).fetchone()
+    return to_ticket_dict(row) if row else None
+
+
+def cmd_resolve_ticket(conn: sqlite3.Connection, payload):
+    ticket_id = payload["id"]
+    closure_reason = payload["closure_reason"].strip()
+    actions_taken = payload["actions_taken"].strip()
+    resolver_user_id = payload["resolver_user_id"]
+    closed_at = utc_now_iso()
+
+    conn.execute(
+        """
+        UPDATE tickets
+        SET
+          status = 'closed',
+          closed_at = ?,
+          closure_reason = ?,
+          AzioniFatteInPassato = ?,
+          assigned_user_id = COALESCE(assigned_user_id, ?)
+        WHERE id = ?
+        """,
+        (closed_at, closure_reason, actions_taken, resolver_user_id, ticket_id),
+    )
+
+    row = conn.execute(
+        """
+        SELECT id, description, status, d_at, closed_at, created_by_user_id, assigned_group_id,
+               assigned_user_id, priority, category, closure_reason, AzioniFatteInPassato, Top5
         FROM tickets WHERE id = ?
         """,
         (ticket_id,),
@@ -815,6 +859,7 @@ COMMANDS = {
     "list_tickets": cmd_list_tickets,
     "get_ticket": cmd_get_ticket,
     "create_ticket": cmd_create_ticket,
+    "resolve_ticket": cmd_resolve_ticket,
     "update_ticket_ml": cmd_update_ticket_ml,
     "dashboard_summary": cmd_dashboard_summary,
     "authenticate_user": cmd_authenticate_user,
@@ -848,4 +893,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

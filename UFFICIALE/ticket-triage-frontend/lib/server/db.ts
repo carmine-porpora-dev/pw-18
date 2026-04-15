@@ -11,6 +11,7 @@ type DbCommand =
   | "list_tickets"
   | "get_ticket"
   | "create_ticket"
+  | "resolve_ticket"
   | "update_ticket_ml"
   | "dashboard_summary"
   | "authenticate_user"

@@ -19,10 +19,12 @@ from sklearn.preprocessing import label_binarize
 from sklearn.svm import LinearSVC
 import matplotlib.pyplot as plt
 
-DATA_PATH = Path(r"C:\Users\c.porpora\Desktop\ML\PW-18\incident_categorizzati_chat.xlsx")
-MODEL_PRIORITA_PATH = Path(r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\model_priorita.pkl")
-MODEL_GRUPPO_PATH = Path(r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\model_gruppo.pkl")
-REPORTS_DIR = Path(r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\ML_Model\reports")
+UFFICIALE_ROOT = Path(__file__).resolve().parents[1]
+DATA_PATH = UFFICIALE_ROOT / "dati" / "incident_categorizzati_chat.xlsx"
+MODELS_DIR = UFFICIALE_ROOT / "modelli_allenati"
+MODEL_PRIORITA_PATH = MODELS_DIR / "model_priorita.pkl"
+MODEL_GRUPPO_PATH = MODELS_DIR / "model_gruppo.pkl"
+REPORTS_DIR = UFFICIALE_ROOT / "ML_Model" / "reports"
 MPL_CONFIG_DIR = REPORTS_DIR / ".matplotlib"
 
 MPL_CONFIG_DIR.mkdir(parents=True, exist_ok=True)

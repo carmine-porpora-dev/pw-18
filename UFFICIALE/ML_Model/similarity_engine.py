@@ -1,13 +1,13 @@
 import joblib
+from pathlib import Path
 from sklearn.metrics.pairwise import cosine_similarity
 
-#vectorizer = joblib.load(r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\tfidf_similarity.pkl")
-#X = joblib.load(r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\matrix_similarity.pkl")
-#df = joblib.load(r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\similarity_dataset.pkl")
+UFFICIALE_ROOT = Path(__file__).resolve().parents[1]
+MODELS_DIR = UFFICIALE_ROOT / "modelli_allenati"
 
-vectorizer = joblib.load(r"C:\Users\c.porpora\Desktop\ML\PW-18\tfidf_similarity.pkl")
-X = joblib.load(r"C:\Users\c.porpora\Desktop\ML\PW-18\matrix_similarity.pkl")
-df = joblib.load(r"C:\Users\c.porpora\Desktop\ML\PW-18\similarity_dataset.pkl")
+vectorizer = joblib.load(MODELS_DIR / "tfidf_similarity.pkl")
+X = joblib.load(MODELS_DIR / "matrix_similarity.pkl")
+df = joblib.load(MODELS_DIR / "similarity_dataset.pkl")
 
 def suggerisci_azione(descrizione, gruppo_predetto, soglia=0.25):
     df_g = df[df["GruppoAssegnazione"] == gruppo_predetto]

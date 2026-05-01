@@ -557,16 +557,17 @@ La soluzione e quindi adatta come prototipo o progetto accademico/dimostrativo, 
 
 ## 11. Criticita tecniche e limiti implementativi
 
-### 11.1 Path assoluti hardcoded
+### 11.1 Path di progetto
 
-Molti script Python usano path assoluti Windows, per esempio sotto:
+Gli script Python risolvono i file a partire dalla cartella del progetto, per esempio:
 
-- `C:\Users\c.porpora\Desktop\ML\...`
+- `UFFICIALE/modelli_allenati/...`
+- `UFFICIALE/dati/incident_categorizzati_chat.xlsx`
 
 Impatto:
 
-- scarsa portabilita
-- difficolta di deploy su altre macchine o ambienti server
+- portabilita su altre macchine
+- deploy indipendente dai path locali dello sviluppatore
 
 ### 11.2 Incoerenza path similarity
 

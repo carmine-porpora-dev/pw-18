@@ -1,10 +1,13 @@
 import joblib
 import numpy as np
 import spacy
+from pathlib import Path
 
 
 nlp = spacy.load("it_core_news_sm")
 stopwords_it = nlp.Defaults.stop_words
+UFFICIALE_ROOT = Path(__file__).resolve().parents[1]
+MODELS_DIR = UFFICIALE_ROOT / "modelli_allenati"
 
 """
 print("### START DEBUG ###")
@@ -13,8 +16,8 @@ print(True if "eliminare" in stopwords_it else False)
 print("### END DEBUG ###")
 """
 
-MODEL_PRIORITA_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\model_priorita.pkl"
-MODEL_GRUPPO_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\model_gruppo.pkl"
+MODEL_PRIORITA_PATH = MODELS_DIR / "model_priorita.pkl"
+MODEL_GRUPPO_PATH = MODELS_DIR / "model_gruppo.pkl"
 MODEL_PRIORITA = joblib.load(MODEL_PRIORITA_PATH)
 MODEL_GRUPPO = joblib.load(MODEL_GRUPPO_PATH)
 

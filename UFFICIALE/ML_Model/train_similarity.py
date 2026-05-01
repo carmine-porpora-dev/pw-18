@@ -1,8 +1,11 @@
 import pandas as pd
 import joblib
+from pathlib import Path
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-DATA_PATH = r"C:\Users\c.porpora\Desktop\ML\PW-18\incident_categorizzati_chat.xlsx"
+UFFICIALE_ROOT = Path(__file__).resolve().parents[1]
+DATA_PATH = UFFICIALE_ROOT / "dati" / "incident_categorizzati_chat.xlsx"
+MODELS_DIR = UFFICIALE_ROOT / "modelli_allenati"
 
 df = pd.read_excel(DATA_PATH)
 df = df.dropna(subset=["Descrizione", "AzioneFattaInPassato"])
@@ -17,8 +20,8 @@ vectorizer = TfidfVectorizer(
 
 X = vectorizer.fit_transform(df["Descrizione"])
 
-joblib.dump(vectorizer, r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\tfidf_similarity.pkl")
-joblib.dump(X, r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\matrix_similarity.pkl")
-joblib.dump(df, r"C:\Users\c.porpora\Desktop\ML\PW-18\pw-18\UFFICIALE\modelli_allenati\similarity_dataset.pkl")
+joblib.dump(vectorizer, MODELS_DIR / "tfidf_similarity.pkl")
+joblib.dump(X, MODELS_DIR / "matrix_similarity.pkl")
+joblib.dump(df, MODELS_DIR / "similarity_dataset.pkl")
 
 print("Indice di similarità salvato")

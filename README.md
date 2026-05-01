@@ -245,19 +245,6 @@ Si richiede analisi dei log middleware e, se necessario, indicazione per reinvio
 
 Il gruppo `DATA_SERVICES` gestisce file, directory, alimentazioni dati, Data Quality, cataloghi, cancellazioni o bonifiche su aree landing/HDFS e verifiche di pervenimento controlli.
 
-Nel modello questo gruppo viene riconosciuto spesso da parole come:
-
-- `file`
-- `data quality`
-- `quality`
-- `portale`
-- `landing`
-- `rinviare`
-- `alimentazione`
-- `catalogo`
-- `flussi`
-- `hdfs`
-
 ### Attivita tipiche
 
 - cancellare file da path HDFS o landing

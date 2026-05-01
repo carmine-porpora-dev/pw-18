@@ -331,3 +331,6 @@ Esempio:
 Il comando 27309794 relativo al rilascio O0000539139, richiesta 00003, acronimo CORE1, e andato in errore.
 Si richiede analisi del log e indicazione della causa con eventuale completamento manuale della richiesta se il rilascio risulta effettivamente eseguito.
 ```
+# DATASET
+
+Il dataset utilizzato per allenare il modello è presente nella folder UFFICIALE/dati  

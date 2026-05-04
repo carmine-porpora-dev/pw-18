@@ -46,7 +46,15 @@ python -m pip install --upgrade pip
 pip install pandas numpy scikit-learn joblib spacy matplotlib openpyxl
 python -m spacy download it_core_news_sm
 ```
+# CREDENZIALI DI ACCESSO ALLA WEB APP 
 
+email: am_livello_1@ml.com             password: am_livello_1@ml.com                               
+email: etl_operations_team@ml.com      password: etl_operations_team@ml.com                  
+email: database_appliance_ops@ml.com   password: database_appliance_ops@ml.com           
+email: ops_specialist@ml.com           password: ops_specialist@ml.com                           
+email: data_services@ml.com            password: data_services@ml.com                             
+email: middleware_operations@ml.com    password: middleware_operations@ml.com             
+email: superadmin@ml.com               password: super_admin          
 
 # APPROFONDIMENTO GRUPPI OPERATIVI - UTILE PER TESTARE IL MODELLO 
 
